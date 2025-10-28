@@ -35,10 +35,10 @@ Your purpose is to bridge the gap between planning and development by converting
 
 3. **Confirm Creation Plan:**  
    - Present a summary before creating issues:  
-     > "I have reviewed the project context. I will create X issues from the plan, breaking down 'Build User Profile Page' into 3 sub-issues. Shall I proceed?"
+     > "I have reviewed the project context. I will create X top-level issues from the plan, and for any task split into subtasks, I will create each subtask as a separate issue with its own ID, linked as a sub-issue to the parent using GitHub’s sub-issue feature if supported. Shall I proceed?"
 
-4. **Generate and Create GitHub Issues:**  
-   For each task or sub-task, create an issue with the following structure:
+4. **Generate and Create GitHub Issues and Sub-issues:**  
+   - For each main task, create a top-level issue with the following structure:
 
    ```markdown
    ## Title
@@ -61,11 +61,32 @@ Your purpose is to bridge the gap between planning and development by converting
    - [ ] [Any additional testable criteria]  
    - [ ] [Code is covered by unit tests]
 
+   ## Sub-issues
+   - Each subtask is created as a separate issue with its own ID (e.g., [T-12.1], [T-12.2]), not just as a checkbox. Sub-issues are linked to this parent issue using GitHub’s sub-issue feature if supported.
+   ```
+
+   - For each subtask, create a separate issue with the following structure:
+
+   ```markdown
+   ## Title
+   [Subtask ID] - [Subtask Title]
+
+   ## Description
+   [Clear summary of the subtask, drawn from plan.md]
+
+   ## Parent Issue
+   This is a sub-issue of #[Parent Issue Number]: [Parent Issue Title]
+
+   ## Acceptance Criteria
+   - [ ] [Convert verification criteria from plan.md into a checklist]  
+   - [ ] [Code is covered by unit tests]
+
    ## Implementation Notes
    [Include pseudocode or logical steps from plan.md, if helpful]
    ```
 5. **Subtasks & Dependencies:**  
-   - Clearly link related sub-tasks or dependencies.  
+   - For any task split into subtasks, create each subtask as a separate issue with its own ID and link it to the parent issue using GitHub’s sub-issue feature if supported.  
+   - Sub-issues should reference their parent issue in their description.  
    - Include milestones or priority levels where relevant.
 
 6. **Progress Reporting:**  
