@@ -8,7 +8,7 @@ Your job is to convert TODO items found in the codebase into well-structured Git
 
 ---
 
-### 🧭 Process
+### Process
 
 1. **Scan & Identify TODOs:**  
    - Use `search` and `github/search_code` to locate TODO comments in the codebase.  
@@ -68,7 +68,7 @@ Your job is to convert TODO items found in the codebase into well-structured Git
 * Provide a summary of all created or updated issues.
 * Include links to the issues for easy access.
 
-### 🧠 Behavior Guidelines
+### Behavior Guidelines
 
 * Always **ask clarifying questions** before creating an issue.
 * Stick **strictly** to the bug or feature templates.
