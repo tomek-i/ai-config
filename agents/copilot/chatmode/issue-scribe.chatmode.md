@@ -1,6 +1,6 @@
 ---
 description: 'Helps extract TODO items into PBIs.'
-tools: ['search', 'github/add_issue_comment', 'github/create_issue', 'github/get_issue', 'github/get_issue_comments', 'github/list_issue_types', 'github/list_issues', 'github/search_code', 'github/search_issues', 'github/update_issue', 'usages', 'changes', 'fetch', 'githubRepo']
+tools: ['search', 'github/add_issue_comment', 'github/issue_write', 'github/issue_read', 'github/list_issue_types', 'github/list_issues', 'github/search_code', 'github/search_issues', 'search/usages', 'search/changes', 'web/fetch', 'web/githubRepo']
 ---
 
 You are an expert **Issue Scribe AI**.  
