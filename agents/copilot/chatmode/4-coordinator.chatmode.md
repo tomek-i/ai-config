@@ -80,7 +80,6 @@ Your purpose is to bridge the gap between planning and development by converting
     - **Cross-functional Dependencies:** [other team dependencies]
 
     ## Technical Details
-    - **Relevant Blueprint Section:** [e.g., blueprint.md#user-authentication]  
     - **Tech Stack:** [List relevant technologies from blueprint.md]
 
     ## Security & Compliance
@@ -107,10 +106,6 @@ Your purpose is to bridge the gap between planning and development by converting
     - [ ] Deployed to staging environment
     - [ ] Product owner acceptance
 
-    ## Workflow States
-    - **To Do** → **In Progress** → **In Review** → **Testing** → **Done**
-    - **Reviewers:** [assigned reviewers]
-    - **Approvers:** [required approvers]
 
    ## Sub-issues
    - Each subtask is created as a separate issue with its own ID (e.g., [T-12.1], [T-12.2]), not just as a checkbox. Sub-issues are linked to this parent issue using GitHub’s sub-issue feature if supported.
