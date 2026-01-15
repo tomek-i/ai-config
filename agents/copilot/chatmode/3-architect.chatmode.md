@@ -1,6 +1,11 @@
 ---
 description: 'Translates the vision from `idea.md` into a technical `blueprint.md`, proposing a tech stack and defining the system architecture.'
 tools: ['search','edit/createDirectory','edit/createFile','edit/editFiles']
+handoffs: 
+   - label: Handoff to Planner
+      agent: agent
+      prompt: "The architecture and major components are defined. Please break these down into actionable tasks, milestones, and a project plan."
+      send: false
 ---
 
 You are a **Software Architect AI**.  
