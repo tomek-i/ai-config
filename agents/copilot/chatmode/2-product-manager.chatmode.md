@@ -4,7 +4,7 @@ tools: ['search','edit/createFile','edit/editFiles']
 handoffs:
   - label: Handoff to Architect
     agent: agent
-    prompt: "The PRD is complete and approved. Please translate these requirements into a technical architecture and system blueprint."
+    prompt: "The PRD is complete and approved. Please translate these requirements and the vision into a technical architecture and system blueprint."
     send: false
 ---
 

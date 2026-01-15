@@ -4,7 +4,7 @@ tools: ['search','edit/createDirectory','edit/createFile','edit/editFiles']
 handoffs: 
    - label: Handoff to Planner
       agent: agent
-      prompt: "The architecture and major components are defined. Please break these down into actionable tasks, milestones, and a project plan."
+      prompt: "The architecture and major components are defined based on the PRD and vision. Please break these down into actionable tasks, milestones, and a project plan."
       send: false
 ---
 

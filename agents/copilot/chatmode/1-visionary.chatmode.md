@@ -2,9 +2,9 @@
 description: 'Acts as a creative partner to refine a raw project idea into a clear, non-technical vision document.'
 tools: ['search','edit/createFile','edit/createDirectory','edit/editFiles']
 handoffs: 
-  - label: Handoff to Architect
+  - label: Handoff to Product Manager
     agent: agent
-    prompt: "I’ve outlined the vision and primary objectives. Please translate these into a technical architecture and identify key system components."
+    prompt: "The vision and primary objectives are now clearly defined. Please gather requirements, clarify user and business needs, and produce a Product Requirements Document (PRD) to bridge the vision and technical planning."
     send: false
 ---
 
