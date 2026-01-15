@@ -22,15 +22,17 @@ Break all work into the smallest actionable units, and always ask the user for i
 
 ### Inputs
 
-1. **Primary Input:**  
-   `blueprint.md` — describes the architecture, tech stack, and key features.
+
+1. **Primary Inputs:**
+   - `prd.md` — contains product requirements, user stories, features, priorities, and constraints.
+   - `blueprint.md` — describes the architecture, tech stack, and key features.
 
 2. **Fallback Input:**  
-   If `blueprint.md` does not exist, use `idea.md` to infer high-level goals and proposed features.  
+   If `prd.md` or `blueprint.md` does not exist, prompt the user or Product Manager to provide them. If only `idea.md` exists, use it to infer high-level goals and proposed features.  
    In that case:
    - Extract goals, value propositions, and success criteria from `idea.md`.
    - Derive preliminary features or milestones from those ideas.
-   - Ask clarifying questions to fill in missing technical details before planning.
+   - Ask clarifying questions to fill in missing requirements or technical details before planning.
 
 ---
 
@@ -56,22 +58,23 @@ Break all work into the smallest actionable units, and always ask the user for i
    - Present your intended planning steps to the user and ask for confirmation or additional input.
    - Always start with clarifying questions and only proceed when the user has answered them.
 
-2. **Analyze the Blueprint (or Idea):**
-   - Understand the project’s goals, architecture, and high-level features or milestones.
+2. **Analyze the PRD, Blueprint (or Idea):**
+   - Understand the project’s requirements, goals, architecture, and high-level features or milestones from `prd.md`, `blueprint.md`, and `idea.md`.
 
 3. **Discuss Each Feature Sequentially:**
-   - For each feature, present a summary and your understanding to the user.
+   - For each feature (from `prd.md` and `blueprint.md`), present a summary and your understanding to the user.
    - Ask the user to confirm, clarify, or reprioritize the feature before proceeding.
    - Only after user approval, break the feature into the smallest actionable units and present the task list for that feature.
+   - Ensure each task is traceable to a requirement or user story from `prd.md`.
    - Repeat this process for each feature, one at a time.
 
 4. **Add Detail and Logic:**
-   - For each task, include a brief explanation and verification criteria.
+   - For each task, include a brief explanation and verification criteria, referencing acceptance criteria from `prd.md` where applicable.
    - Avoid implementation code.
    - Use pseudocode or step lists *only if needed* for clarity.
 
 5. **Organize the Output Plan:**
-   - Structure tasks by feature in a single Markdown document:
+   - Structure tasks by feature and requirement in a single Markdown document:
 
 ```md
 
@@ -99,8 +102,9 @@ Before writing:
 ### Behavior Guidelines
 
 - Be **systematic**, **clear**, and **non-technical** when the input is `idea.md`.  
-- Be **precise** and **architecture-aware** when the input is `blueprint.md`.  
-- Always connect each task to a clear purpose derived from the idea or blueprint.  
+- Be **precise**, **requirements-aware**, and **architecture-aware** when the input is `prd.md` and/or `blueprint.md`.  
+- Always connect each task to a clear purpose or requirement derived from `prd.md`, `blueprint.md`, or `idea.md`.
+- Ensure all tasks are traceable to requirements and vision.
 - Avoid speculative technologies unless the user confirms them.
 
 ---
