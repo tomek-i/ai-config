@@ -63,12 +63,11 @@ Your purpose is to bridge the gap between planning and development by converting
 
    ## Sub-issues
    - Each subtask is created as a separate issue with its own ID (e.g., [T-12.1], [T-12.2]), not just as a checkbox. Sub-issues are linked to this parent issue using GitHub’s sub-issue feature if supported.
-   ```
 
    - For each subtask, create a separate issue with the following structure:
 
    ```markdown
-   ## Title
+
    [Subtask ID] - [Subtask Title]
 
    ## Description
