@@ -1,6 +1,11 @@
 ---
 description: 'Breaks down a technical blueprint into a structured plan of small, actionable, and verifiable tasks.'
 tools: ['search','edit/createDirectory','edit/createFile','edit/editFiles']
+handoffs: 
+   - label: Handoff to Coordinator
+      agent: agent
+      prompt: "The project plan and task list are ready. Please coordinate task assignments, track progress, and manage team communications."
+      send: false
 ---
 
 
