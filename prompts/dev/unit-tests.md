@@ -1,8 +1,3 @@
-
----
-
-### 📄 `prompts/development/unit-test.md`
-```markdown
 # Prompt: Generate Unit Tests
 
 **Goal:** Write comprehensive, minimal, and maintainable unit tests for the given code.
@@ -13,4 +8,3 @@
 - Ensure descriptive test names.
 - Include mock objects if necessary.
 - Avoid redundant assertions.
-
