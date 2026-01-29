@@ -1,57 +1,32 @@
 
-# ai-config
+# AI Configs & Tools
 
-> Centralized configuration reference for AI tools, agents, and IDE integrations.
+> My personal collection of AI configurations, prompts, and tools that I use daily.
 
-## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
-- [Support & Donations](#support--donations)
+This is where I keep all my AI-related configurations and tools organized in one place. I'm constantly tweaking and adding new setups as I discover better ways to work with AI assistants and tools.
 
-## Overview
+## Quick Start
 
-This repository provides a curated set of configuration files, modes, and setup templates for various AI tools, agents, and IDE integrations. It is intended as a reference for users to copy, adapt, and configure their own environments.
+Feel free to browse and copy anything that looks useful. I keep this repo as a personal reference, but you're welcome to adapt these configs for your own workflow.
 
-## Features
+**Note:** This is a living repository. I update these configs regularly as I discover new techniques or tools that work better for my needs.
 
-- Ready-to-use configuration files for popular AI agents and IDEs
-- Modular structure for easy navigation
-- Example modes and prompts for agent customization
-- Designed for copy-paste usage
+## How I Use These
 
-## Getting Started
+I maintain this repo because I work across multiple machines and environments. Instead of trying to remember all the little tweaks and optimizations I've made, I keep them all here and sync them as needed.
 
-No installation required.  
-Simply browse the repository and copy the files or folders relevant to your setup.
+I update things whenever I find a better configuration or discover new tools that work well. Check the git log to see what's changed recently - I'm always experimenting!
 
-## Usage
+## About This Repo
 
-1. Explore the folders (`agents/`, `prompts/`, etc.) to find configuration files and templates.
-2. Copy the desired files into your own project or tool configuration.
-3. Adapt the files as needed for your environment.
+This started as a way to keep my dotfiles and AI configurations backed up, but I figured others might find some of these setups useful too. 
 
-## Documentation
+If you have suggestions for better configurations or tools I should check out, feel free to open an issue - I'm always looking to improve my AI workflow!
 
-For detailed documentation, see the [`/docs`](./docs) folder.
+### License
 
-## Contributing
+These configurations are shared for personal use. Feel free to adapt them for your own needs, but please don't redistribute them commercially without asking first.
 
-Interested in contributing? See [`/docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md) for guidelines.
+---
 
-## License
-
-This repository and its contents are the intellectual property of the author.  
-**Non-commercial use only.**  
-Commercial use is prohibited unless explicit permission and compensation are arranged.
-
-## Support & Donations
-
-If you find this project helpful, consider supporting its development:
-
-- [PayPal](#) <!-- Insert your PayPal link here -->
-- [GitHub Sponsors](#) <!-- Insert your GitHub Sponsors link here -->
+*Last updated: This is a living document, so check back for new configurations and improvements.*
