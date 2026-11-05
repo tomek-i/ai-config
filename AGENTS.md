@@ -26,6 +26,8 @@ node install/install.mjs --dry-run # check the install without writing
 ```
 
 Run the tests after any change to `install/` or `hooks/claude/settings.hooks.json`.
+The installer only adds missing hook entries; changing an existing one in
+`settings.hooks.json` does not update installed settings.
 
 ## Conventions
 

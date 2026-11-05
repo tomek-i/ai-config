@@ -34,7 +34,7 @@
 
 ## Install
 
-Needs Node 20+ (and `npx` for the skills step).
+Needs Node 22+ (and `npx` for the skills step).
 
 ```bash
 node install/install.mjs --dry-run       # see what would change
@@ -58,7 +58,11 @@ What it does for each tool:
   header.
 - Any existing file that would change is backed up first as
   `<file>.bak-<timestamp>`. Identical files are left alone.
-- Settings are merged: only missing hooks and a missing `defaultMode` are added.
+- Settings are merged: only missing hooks are added, plus
+  `permissions.defaultMode: "auto"` if no mode is set. Hook entries that are
+  already installed are never updated or removed; change those by hand.
+- If `settings.json` is invalid JSON or has an unexpected shape, the install
+  stops before writing anything.
 - Skills are installed with `npx skills add <this repo> -g`, which places them
   in each tool's skills folder.
 
