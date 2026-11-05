@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{HOOKS_DIR}}/biome-format.js\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{HOOKS_DIR}}/dev-ports-check.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

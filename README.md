@@ -1,32 +1,93 @@
+# AI Config
 
-# AI Configs & Tools
+> My AI coding setup in one place: global instructions, skills and hooks,
+> installed into Claude Code, Codex, OpenCode and GitHub Copilot CLI from a
+> single source.
 
-> My personal collection of AI configurations, prompts, and tools that I use daily.
+## What's Here
 
-This is where I keep all my AI-related configurations and tools organized in one place. I'm constantly tweaking and adding new setups as I discover better ways to work with AI assistants and tools.
+| Path | What |
+| --- | --- |
+| `instructions/global.md` | Global instructions shared by every tool |
+| `instructions/<tool>.md` | Optional tool-specific additions (`claude-code.md` today) |
+| `skills/` | My own skills in the [Agent Skills](https://agentskills.io) `SKILL.md` format |
+| `hooks/claude/` | Claude Code hooks and the settings they need |
+| `external.md` | Third-party skills and plugins I use, with install commands |
+| `install/` | The installer and its tests |
 
-## Quick Start
+### Skills
 
-Feel free to browse and copy anything that looks useful. I keep this repo as a personal reference, but you're welcome to adapt these configs for your own workflow.
+| Skill | What it does |
+| --- | --- |
+| `github-issue` | Writes issues as Why / What / Acceptance criteria; splits big work into sub-issues |
+| `pull-request` | PR description, before/after screenshots, narrated video for new features |
+| `pr-screenshots` | Uploads screenshots to a PR body as GitHub attachments (never committed) |
+| `pr-review-fix` | Works through every review comment on a PR |
+| `ux-review` | Walks a running web app and produces an HTML page of UX suggestions |
 
-**Note:** This is a living repository. I update these configs regularly as I discover new techniques or tools that work better for my needs.
+### Hooks (Claude Code)
 
-## How I Use These
+- `biome-format.js` — after each edit, formats the file with the project's own
+  Biome, if the project has it.
+- `dev-ports-check.js` — when Claude stops, warns if common dev-server ports are
+  still listening (Windows `netstat` only).
 
-I maintain this repo because I work across multiple machines and environments. Instead of trying to remember all the little tweaks and optimizations I've made, I keep them all here and sync them as needed.
+## Install
 
-I update things whenever I find a better configuration or discover new tools that work well. Check the git log to see what's changed recently - I'm always experimenting!
+Needs Node 22+ (and `npx` for the skills step).
 
-## About This Repo
+```bash
+node install/install.mjs --dry-run       # see what would change
+node install/install.mjs                 # every tool whose config folder exists
+node install/install.mjs claude codex    # only these tools
+node install/install.mjs --no-skills     # instructions and hooks only
+```
 
-This started as a way to keep my dotfiles and AI configurations backed up, but I figured others might find some of these setups useful too. 
+Tools: `claude`, `codex`, `opencode`, `copilot`.
 
-If you have suggestions for better configurations or tools I should check out, feel free to open an issue - I'm always looking to improve my AI workflow!
+What it does for each tool:
 
-### License
+| Tool | Instructions | Skills | Hooks |
+| --- | --- | --- | --- |
+| Claude Code | `~/.claude/CLAUDE.md` | yes | `~/.claude/hooks/` + merged into `~/.claude/settings.json` |
+| Codex | `~/.codex/AGENTS.md` | yes | — |
+| OpenCode | `~/.config/opencode/AGENTS.md` | yes | — |
+| Copilot CLI | `~/.copilot/copilot-instructions.md` | yes | — |
 
-These configurations are shared for personal use. Feel free to adapt them for your own needs, but please don't redistribute them commercially without asking first.
+- Instructions are `global.md` plus the tool's overlay, with a "generated"
+  header.
+- Any existing file that would change is backed up first as
+  `<file>.bak-<timestamp>`. Identical files are left alone.
+- Settings are merged: only missing hooks are added, plus
+  `permissions.defaultMode: "auto"` if no mode is set. Hook entries that are
+  already installed are never updated or removed; change those by hand.
+- If `settings.json` is invalid JSON or has an unexpected shape, the install
+  stops before writing anything.
+- Skills are installed with `npx skills add <this repo> -g`, which places them
+  in each tool's skills folder.
 
----
+Paths live in `install/targets.mjs`; fix them there if a tool moves its config.
 
-*Last updated: This is a living document, so check back for new configurations and improvements.*
+Then install the third-party pieces listed in `external.md`.
+
+## Making Changes
+
+Edit the files here, not the installed copies, then re-run the installer.
+
+```bash
+node --test "install/*.test.mjs"
+```
+
+See `docs/CONTRIBUTING.md` for adding a skill, an instruction overlay or a
+new tool.
+
+## History
+
+This repo used to hold GitHub Copilot chatmodes and prompt templates. They were
+removed in favour of skills, plan mode and global instructions; see the git
+history if you need them.
+
+## License
+
+Shared for personal use. Adapt freely, but please don't redistribute
+commercially without asking first.
