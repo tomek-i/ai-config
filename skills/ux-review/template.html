@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UX Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<script src="data.js"></script>
+<style>
+  :root {
+    --bg: #f5f5f3; --surface: #ffffff; --text: #1d1d1f; --muted: #66666c; --border: #e2e2de;
+    --accent: #2563eb; --accent-fg: #ffffff;
+    --ok: #15803d; --ok-bg: #dcfce7; --no: #b91c1c; --no-bg: #fee2e2; --chg: #a16207; --chg-bg: #fef3c7;
+    --hi: #b91c1c; --hi-bg: #fee2e2; --md: #a16207; --md-bg: #fef3c7; --lo: #475569; --lo-bg: #e2e8f0;
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 2px 8px rgba(0,0,0,.04);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131315; --surface: #1c1c1f; --text: #ececef; --muted: #a1a1a9; --border: #2d2d32;
+      --accent: #60a5fa; --accent-fg: #0b1220;
+      --ok: #4ade80; --ok-bg: #12301d; --no: #f87171; --no-bg: #3a1616; --chg: #fbbf24; --chg-bg: #382a0e;
+      --hi: #f87171; --hi-bg: #3a1616; --md: #fbbf24; --md-bg: #382a0e; --lo: #cbd5e1; --lo-bg: #2a3240;
+      --shadow: none; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131315; --surface: #1c1c1f; --text: #ececef; --muted: #a1a1a9; --border: #2d2d32;
+    --accent: #60a5fa; --accent-fg: #0b1220;
+    --ok: #4ade80; --ok-bg: #12301d; --no: #f87171; --no-bg: #3a1616; --chg: #fbbf24; --chg-bg: #382a0e;
+    --hi: #f87171; --hi-bg: #3a1616; --md: #fbbf24; --md-bg: #382a0e; --lo: #cbd5e1; --lo-bg: #2a3240;
+    --shadow: none; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+  header.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  .top .wrap { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding-top: 12px; padding-bottom: 12px; }
+  .top h1 { font-size: 17px; margin: 0; flex: 1 1 auto; }
+  .counts { color: var(--muted); font-size: 13px; }
+  .filters, .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  button { font: inherit; font-size: 13px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  .intro { padding: 24px 0 8px; }
+  .intro .meta { color: var(--muted); font-size: 13px; }
+  .intro p { margin: 8px 0 0; max-width: 75ch; }
+  main { padding: 16px 0 64px; display: grid; gap: 20px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 20px; border-left: 5px solid var(--border); }
+  .card.d-approve { border-left-color: var(--ok); }
+  .card.d-decline { border-left-color: var(--no); opacity: .72; }
+  .card.d-changes { border-left-color: var(--chg); }
+  .card-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+  .num { color: var(--muted); font-weight: 600; }
+  .card h2 { font-size: 18px; margin: 0; flex: 1 1 300px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--lo-bg); color: var(--lo); white-space: nowrap; }
+  .chip.sev-high { background: var(--hi-bg); color: var(--hi); }
+  .chip.sev-medium { background: var(--md-bg); color: var(--md); }
+  .text { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 14px; }
+  .text h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 4px; }
+  .text p { margin: 0; }
+  .changes { margin: 12px 0 0; padding-left: 20px; }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 8px; }
+  .shots { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  figure { margin: 0; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .shot { position: relative; display: block; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); }
+  .shot img { display: block; width: 100%; height: auto; }
+  .hl { position: absolute; border: 3px solid #ef4444; border-radius: 6px; box-shadow: 0 0 0 9999px rgba(0,0,0,.12); pointer-events: none; }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .wf { background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 8px; min-height: 120px; display: flex; align-items: center; justify-content: center; }
+  .wf svg { width: 100%; height: auto; max-height: 520px; }
+  .wf .empty { color: #66666c; font-size: 13px; }
+  .tag { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+  .tag.after { color: var(--ok); }
+  .decide { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .decide button.d-approve.on { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+  .decide button.d-decline.on { background: var(--no); border-color: var(--no); color: var(--surface); }
+  .decide button.d-changes.on { background: var(--chg); border-color: var(--chg); color: var(--surface); }
+  .note { flex: 1 1 100%; display: none; }
+  .card.d-changes .note { display: block; }
+  textarea { width: 100%; min-height: 70px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  dialog { max-width: min(720px, calc(100vw - 32px)); width: 100%; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); }
+  dialog textarea { min-height: 300px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .hidden { display: none !important; }
+  @media (max-width: 760px) {
+    .text, .compare { grid-template-columns: 1fr; }
+    .card { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1 id="title">UX review</h1>
+    <span class="counts" id="counts"></span>
+    <div class="filters" id="filters" role="group" aria-label="Filter suggestions">
+      <button data-f="all" class="on">All</button>
+      <button data-f="pending">Pending</button>
+      <button data-f="approve">Approved</button>
+      <button data-f="changes">With changes</button>
+      <button data-f="decline">Declined</button>
+    </div>
+    <div class="actions">
+      <button id="download">Download JSON</button>
+      <button id="copy" class="primary">Copy decisions</button>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <section class="intro" id="intro"></section>
+  <main id="list"></main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<dialog id="dlg">
+  <p>Copy this and paste it back to Claude:</p>
+  <textarea id="dlg-text" readonly></textarea>
+  <p><button id="dlg-close">Close</button></p>
+</dialog>
+<script>
+(() => {
+  const D = window.UX_REVIEW || { title: "UX review", suggestions: [] };
+  const S = D.suggestions || [];
+  const KEY = "ux-review:" + (D.id || (D.title + ":" + (D.date || "")));
+  const LABEL = { approve: "APPROVE", decline: "DECLINE", changes: "APPROVE WITH CHANGES", pending: "PENDING" };
+  let state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { state = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const decisionOf = id => (state[id] && state[id].decision) || "pending";
+  let filter = "all";
+
+  // ---- Excalidraw-format wireframe renderer (rough.js, plain SVG fallback) ----
+  const NS = "http://www.w3.org/2000/svg";
+  const FONT = "Kalam, 'Comic Sans MS', cursive";
+  const node = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) if (attrs[k] !== undefined && attrs[k] !== "") n.setAttribute(k, attrs[k]); return n; };
+  const seedOf = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return (Math.abs(h) % 2147483646) + 1; };
+
+  function drawWireframe(host, elements) {
+    const all = Array.isArray(elements) ? elements : [];
+    const deleted = new Set();
+    all.filter(e => e && e.type === "delete").forEach(d => String(d.ids || "").split(",").forEach(i => deleted.add(i.trim())));
+    const els = all.filter(e => e && !["cameraUpdate", "delete", "restoreCheckpoint"].includes(e.type) && !deleted.has(e.id));
+    if (!els.length) { host.innerHTML = '<span class="empty">No wireframe</span>'; return; }
+
+    const svg = node("svg", { xmlns: NS, role: "img" });
+    const rc = window.rough ? window.rough.svg(svg) : null;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    const grow = (x, y) => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); };
+
+    const opts = e => {
+      const stroke = !e.strokeColor || e.strokeColor === "transparent" ? (e.strokeColor === "transparent" ? "none" : "#1e1e1e") : e.strokeColor;
+      const fill = e.backgroundColor && e.backgroundColor !== "transparent" ? e.backgroundColor : undefined;
+      return {
+        stroke, fill, strokeWidth: e.strokeWidth == null ? 2 : e.strokeWidth,
+        fillStyle: e.fillStyle || "solid", roughness: e.roughness == null ? 1 : e.roughness,
+        strokeLineDash: e.strokeStyle === "dashed" ? [8, 6] : e.strokeStyle === "dotted" ? [2, 6] : undefined,
+        seed: seedOf(e.id || ""), bowing: 1
+      };
+    };
+    const plain = o => ({ stroke: o.stroke, "stroke-width": o.strokeWidth, fill: o.fill || "none", "stroke-dasharray": o.strokeLineDash ? o.strokeLineDash.join(" ") : undefined, "stroke-linecap": "round", "stroke-linejoin": "round" });
+    const roundRect = (x, y, w, h, r) => `M${x + r},${y} L${x + w - r},${y} Q${x + w},${y} ${x + w},${y + r} L${x + w},${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} L${x + r},${y + h} Q${x},${y + h} ${x},${y + h - r} L${x},${y + r} Q${x},${y} ${x + r},${y} Z`;
+
+    const shapes = {
+      rect: (x, y, w, h, o, rounded) => {
+        const r = rounded ? Math.max(2, Math.min(16, w / 4, h / 4)) : 0;
+        if (rc) return r ? rc.path(roundRect(x, y, w, h, r), o) : rc.rectangle(x, y, w, h, o);
+        return node("rect", Object.assign({ x, y, width: w, height: h, rx: r }, plain(o)));
+      },
+      ellipse: (cx, cy, w, h, o) => rc ? rc.ellipse(cx, cy, w, h, o) : node("ellipse", Object.assign({ cx, cy, rx: w / 2, ry: h / 2 }, plain(o))),
+      poly: (pts, o) => rc ? rc.polygon(pts, o) : node("polygon", Object.assign({ points: pts.map(p => p.join(",")).join(" ") }, plain(o))),
+      line: (pts, o) => rc ? rc.linearPath(pts, Object.assign({}, o, { fill: undefined })) : node("polyline", Object.assign({ points: pts.map(p => p.join(",")).join(" ") }, plain(Object.assign({}, o, { fill: undefined })))),
+      dot: (cx, cy, d, o) => rc ? rc.circle(cx, cy, d, Object.assign({}, o, { fill: o.stroke, fillStyle: "solid" })) : node("circle", Object.assign({ cx, cy, r: d / 2 }, plain(Object.assign({}, o, { fill: o.stroke }))))
+    };
+
+    function text(g, str, x, y, fs, color, anchor, bg) {
+      const lines = String(str).split("\n");
+      const lh = fs * 1.25;
+      const width = Math.max(...lines.map(l => l.length)) * fs * 0.55;
+      const left = anchor === "middle" ? x - width / 2 : x;
+      if (bg) g.appendChild(node("rect", { x: left - 4, y: y - 2, width: width + 8, height: lh * lines.length + 4, fill: "#ffffff", rx: 4 }));
+      lines.forEach((l, i) => {
+        const t = node("text", { x, y: y + fs * 0.95 + i * lh, "font-family": FONT, "font-size": fs, fill: color || "#1e1e1e", "text-anchor": anchor || "start" });
+        t.textContent = l;
+        g.appendChild(t);
+      });
+      grow(left, y); grow(left + width, y + lh * lines.length);
+      return lh * lines.length;
+    }
+
+    function head(g, kind, from, tip, o) {
+      if (!kind) return;
+      const a = Math.atan2(tip[1] - from[1], tip[0] - from[0]);
+      const len = 14 + o.strokeWidth * 2, spread = 0.45;
+      const p1 = [tip[0] - len * Math.cos(a - spread), tip[1] - len * Math.sin(a - spread)];
+      const p2 = [tip[0] - len * Math.cos(a + spread), tip[1] - len * Math.sin(a + spread)];
+      const ho = Object.assign({}, o, { strokeLineDash: undefined });
+      if (kind === "triangle") g.appendChild(shapes.poly([tip, p1, p2], Object.assign({}, ho, { fill: o.stroke, fillStyle: "solid" })));
+      else if (kind === "dot") g.appendChild(shapes.dot(tip[0], tip[1], 10, ho));
+      else if (kind === "bar") {
+        const b = 10, pa = a + Math.PI / 2;
+        g.appendChild(shapes.line([[tip[0] + b * Math.cos(pa), tip[1] + b * Math.sin(pa)], [tip[0] - b * Math.cos(pa), tip[1] - b * Math.sin(pa)]], ho));
+      } else g.appendChild(shapes.line([p1, tip, p2], ho));
+    }
+
+    for (const e of els) {
+      const g = node("g", {});
+      if (e.opacity != null && e.opacity < 100) g.setAttribute("opacity", e.opacity / 100);
+      const o = opts(e);
+      const x = +e.x || 0, y = +e.y || 0, w = +e.width || 0, h = +e.height || 0;
+      const label = e.label && e.label.text != null ? e.label : null;
+
+      if (e.type === "rectangle" || e.type === "ellipse" || e.type === "diamond" || e.type === "frame") {
+        if (e.type === "rectangle" || e.type === "frame") g.appendChild(shapes.rect(x, y, w, h, o, !!e.roundness));
+        else if (e.type === "ellipse") g.appendChild(shapes.ellipse(x + w / 2, y + h / 2, w, h, o));
+        else g.appendChild(shapes.poly([[x + w / 2, y], [x + w, y + h / 2], [x + w / 2, y + h], [x, y + h / 2]], o));
+        grow(x, y); grow(x + w, y + h);
+        if (label) {
+          const fs = label.fontSize || 20;
+          const n = String(label.text).split("\n").length;
+          text(g, label.text, x + w / 2, y + h / 2 - (n * fs * 1.25) / 2, fs, label.strokeColor || e.labelColor || "#1e1e1e", "middle");
+        }
+      } else if (e.type === "arrow" || e.type === "line") {
+        const pts = (Array.isArray(e.points) && e.points.length > 1 ? e.points : [[0, 0], [w, h]]).map(p => [x + p[0], y + p[1]]);
+        g.appendChild(shapes.line(pts, o));
+        pts.forEach(p => grow(p[0], p[1]));
+        const end = e.endArrowhead === undefined ? (e.type === "arrow" ? "arrow" : null) : e.endArrowhead;
+        head(g, end, pts[pts.length - 2], pts[pts.length - 1], o);
+        head(g, e.startArrowhead || null, pts[1], pts[0], o);
+        if (label) {
+          const i = Math.floor((pts.length - 1) / 2), a = pts[i], b = pts[i + 1];
+          const fs = label.fontSize || 16;
+          text(g, label.text, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - fs * 0.7, fs, label.strokeColor || "#1e1e1e", "middle", true);
+        }
+      } else if (e.type === "text") {
+        text(g, e.text == null ? "" : e.text, x, y, e.fontSize || 20, e.strokeColor || "#1e1e1e", e.textAlign === "center" ? "middle" : "start");
+      } else continue;
+      svg.appendChild(g);
+    }
+
+    const pad = 24;
+    const vw = Math.max(1, maxX - minX + pad * 2), vh = Math.max(1, maxY - minY + pad * 2);
+    svg.setAttribute("viewBox", `${minX - pad} ${minY - pad} ${vw} ${vh}`);
+    svg.setAttribute("width", vw);
+    svg.setAttribute("height", vh);
+    host.innerHTML = "";
+    host.appendChild(svg);
+  }
+
+  // ---- Page ----
+  document.title = D.title || "UX review";
+  document.getElementById("title").textContent = D.title || "UX review";
+  const meta = [D.app, D.url, D.date].filter(Boolean).map(esc).join(" · ");
+  document.getElementById("intro").innerHTML =
+    (meta ? `<div class="meta">${meta} · ${S.length} suggestion${S.length === 1 ? "" : "s"}</div>` : "") +
+    (D.summary ? `<p>${esc(D.summary)}</p>` : "");
+
+  const list = document.getElementById("list");
+  S.forEach((s, idx) => {
+    const id = String(s.id != null ? s.id : idx + 1);
+    s.id = id;
+    const card = document.createElement("article");
+    card.className = "card";
+    card.id = "s-" + id;
+    const chips = [
+      s.area && `<span class="chip">${esc(s.area)}</span>`,
+      s.category && `<span class="chip">${esc(s.category)}</span>`,
+      s.severity && `<span class="chip sev-${esc(String(s.severity).toLowerCase())}">${esc(s.severity)} impact</span>`,
+      s.effort && `<span class="chip">effort ${esc(s.effort)}</span>`
+    ].filter(Boolean).join("");
+    const shots = (s.screenshots || []).map(sh => {
+      const hls = (sh.highlights || []).map(h => `<div class="hl" style="left:${+h.x}%;top:${+h.y}%;width:${+h.w}%;height:${+h.h}%"></div>`).join("");
+      return `<figure><a class="shot" href="${esc(sh.src)}" target="_blank" rel="noopener"><img src="${esc(sh.src)}" alt="${esc(sh.caption || "Screenshot")}" loading="lazy">${hls}</a>${sh.caption ? `<figcaption>${esc(sh.caption)}</figcaption>` : ""}</figure>`;
+    }).join("");
+    const wf = s.wireframe || {};
+    card.innerHTML = `
+      <div class="card-head"><span class="num">#${esc(id)}</span><h2>${esc(s.title)}</h2><div class="chips">${chips}</div></div>
+      <div class="text">
+        <div><h3>Problem</h3><p>${esc(s.problem)}</p></div>
+        <div><h3>Proposal</h3><p>${esc(s.proposal)}</p></div>
+        <div><h3>Impact</h3><p>${esc(s.impact)}</p></div>
+      </div>
+      ${(s.changes || []).length ? `<ul class="changes">${s.changes.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
+      ${shots ? `<div class="section-label">Current</div><div class="shots">${shots}</div>` : ""}
+      ${(wf.before || wf.after) ? `<div class="section-label">Wireframes</div>
+      <div class="compare">
+        <figure><div class="tag">Before</div><div class="wf" data-wf="before"></div></figure>
+        <figure><div class="tag after">After</div><div class="wf" data-wf="after"></div></figure>
+      </div>` : ""}
+      <div class="decide" role="group" aria-label="Decision for suggestion ${esc(id)}">
+        <button class="d-approve" data-d="approve">Approve</button>
+        <button class="d-changes" data-d="changes">Approve with changes</button>
+        <button class="d-decline" data-d="decline">Decline</button>
+        <div class="note"><textarea placeholder="What should change?" aria-label="Requested changes"></textarea></div>
+      </div>`;
+    card.querySelectorAll(".wf").forEach(h => drawWireframe(h, wf[h.dataset.wf]));
+    const ta = card.querySelector("textarea");
+    ta.value = (state[id] && state[id].note) || "";
+    ta.addEventListener("input", () => { state[id] = Object.assign({}, state[id], { note: ta.value }); save(); });
+    card.querySelectorAll("[data-d]").forEach(b => b.addEventListener("click", () => {
+      const d = b.dataset.d;
+      const next = decisionOf(id) === d ? "pending" : d;
+      state[id] = Object.assign({}, state[id], { decision: next });
+      save(); paint(card, id);
+      if (next === "changes") ta.focus();
+    }));
+    list.appendChild(card);
+    paint(card, id);
+  });
+
+  function paint(card, id) {
+    const d = decisionOf(id);
+    card.classList.remove("d-approve", "d-decline", "d-changes", "d-pending");
+    card.classList.add("d-" + d);
+    card.querySelectorAll("[data-d]").forEach(b => { b.classList.toggle("on", b.dataset.d === d); b.setAttribute("aria-pressed", b.dataset.d === d); });
+    card.classList.toggle("hidden", filter !== "all" && filter !== d);
+    counts();
+  }
+  function counts() {
+    const c = { approve: 0, changes: 0, decline: 0, pending: 0 };
+    S.forEach(s => c[decisionOf(s.id)]++);
+    document.getElementById("counts").textContent = `${c.approve} approved · ${c.changes} with changes · ${c.decline} declined · ${c.pending} pending`;
+  }
+  document.querySelectorAll("#filters [data-f]").forEach(b => b.addEventListener("click", () => {
+    filter = b.dataset.f;
+    document.querySelectorAll("#filters [data-f]").forEach(x => x.classList.toggle("on", x === b));
+    S.forEach(s => paint(document.getElementById("s-" + s.id), s.id));
+  }));
+  counts();
+
+  // ---- Export ----
+  const decisions = () => S.map(s => ({ id: s.id, title: s.title, decision: decisionOf(s.id), note: (state[s.id] && state[s.id].note) || "" }));
+  function exportText() {
+    const out = [`# UX review decisions: ${D.title || ""}${D.date ? " (" + D.date + ")" : ""}`, ""];
+    for (const d of decisions()) {
+      out.push(`- **${LABEL[d.decision]}** #${d.id} ${d.title}`);
+      if (d.decision === "changes" && d.note.trim()) out.push(`  - Changes: ${d.note.trim().replace(/\s*\n\s*/g, " / ")}`);
+    }
+    return out.join("\n");
+  }
+  const toast = msg => { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1800); };
+  function showDialog(txt) {
+    const dlg = document.getElementById("dlg"), ta = document.getElementById("dlg-text");
+    ta.value = txt;
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+    ta.select();
+  }
+  document.getElementById("dlg-close").addEventListener("click", () => document.getElementById("dlg").close());
+  document.getElementById("copy").addEventListener("click", async () => {
+    const txt = exportText();
+    try { await navigator.clipboard.writeText(txt); toast("Decisions copied. Paste them back to Claude."); }
+    catch (e) { showDialog(txt); }
+  });
+  document.getElementById("download").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({ id: D.id, title: D.title, date: D.date, decisions: decisions() }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ux-review-decisions.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+})();
+</script>
+</body>
+</html>
