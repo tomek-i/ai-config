@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { beforeEach, test } from 'node:test';
-import { HEADER, REPO, buildInstructions, install, mergeSettings, selectTargets, skillsArgs, writeFile } from './install.mjs';
+import { afterEach, beforeEach, test } from 'node:test';
+import { HEADER, REPO, buildInstructions, install, mergeSettings, selectTargets, skillsArgs, skillsCommand, writeFile } from './install.mjs';
 import { TARGETS } from './targets.mjs';
 
 let home;
@@ -13,6 +13,10 @@ const readHome = (rel) => fs.readFileSync(path.join(home, rel), 'utf8');
 
 beforeEach(() => {
   home = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-config-test-'));
+});
+
+afterEach(() => {
+  fs.rmSync(home, { recursive: true, force: true });
 });
 
 test('instructions are global.md plus the tool overlay', () => {
@@ -125,4 +129,53 @@ test('skills are installed for every selected tool', () => {
     args.filter((_, i) => args[i - 1] === '-a'),
     ['claude-code', 'github-copilot'],
   );
+});
+
+test('dry run leaves settings and hooks untouched', () => {
+  fs.mkdirSync(path.join(home, '.claude'));
+  fs.writeFileSync(path.join(home, '.claude', 'settings.json'), '{"model":"opus"}');
+  run({ dryRun: true });
+  assert.equal(readHome('.claude/settings.json'), '{"model":"opus"}');
+  assert.ok(!fs.existsSync(path.join(home, '.claude', 'hooks')));
+});
+
+test('settings.json with a BOM is merged', () => {
+  fs.mkdirSync(path.join(home, '.claude'));
+  fs.writeFileSync(path.join(home, '.claude', 'settings.json'), '\uFEFF{"model":"opus"}');
+  run({});
+  const settings = JSON.parse(readHome('.claude/settings.json'));
+  assert.equal(settings.model, 'opus');
+  assert.ok(settings.hooks.Stop);
+});
+
+test('invalid settings.json fails before anything is written', () => {
+  fs.mkdirSync(path.join(home, '.claude'));
+  fs.writeFileSync(path.join(home, '.claude', 'settings.json'), '{ // comment\n}');
+  assert.throws(() => run({}), /settings\.json is not valid JSON.*nothing was changed/);
+  assert.deepEqual(fs.readdirSync(path.join(home, '.claude')), ['settings.json']);
+});
+
+test('a hooks event that is not an array fails before anything is written', () => {
+  fs.mkdirSync(path.join(home, '.claude'));
+  fs.writeFileSync(path.join(home, '.claude', 'settings.json'), '{"hooks":{"Stop":{}}}');
+  assert.throws(() => run({}), /"hooks\.Stop" must be an array/);
+  assert.deepEqual(fs.readdirSync(path.join(home, '.claude')), ['settings.json']);
+});
+
+test('existing hook groups without a hooks list are kept', () => {
+  const fragment = { hooks: { Stop: [{ hooks: [{ type: 'command', command: 'x' }] }] } };
+  const merged = mergeSettings({ hooks: { Stop: [{ matcher: 'odd' }] } }, fragment, '/h');
+  assert.deepEqual(merged.hooks.Stop, [{ matcher: 'odd' }, fragment.hooks.Stop[0]]);
+});
+
+test('hook commands use forward slashes', () => {
+  fs.mkdirSync(path.join(home, '.claude'));
+  run({});
+  const command = JSON.parse(readHome('.claude/settings.json')).hooks.Stop[0].hooks[0].command;
+  assert.ok(!command.includes('\\'));
+});
+
+test('the skills command quotes every argument', () => {
+  const command = skillsCommand('C:/My Repo', [TARGETS.codex]);
+  assert.equal(command, 'npx "-y" "skills" "add" "C:/My Repo" "-g" "--skill" "*" "-y" "-a" "codex"');
 });
