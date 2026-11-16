@@ -60,8 +60,11 @@ or the project's design source of truth explicitly asks for it:
 - shockwave rings or circles popping out of things
 - decorative particles
 - long thin decorative lines
-- em dashes in any text (UI copy, and the review's own text)
+- em dashes in any text
 - generic motion with no purpose, such as an icon floating up
+
+This applies to the review's own text too. The same list is in the global
+instructions (`UI Design`); keep both in sync.
 
 Each finding must be **specific and grounded in a screenshot**: one problem,
 one concrete fix (name the token, value or component). Aim for 5–20, ordered by

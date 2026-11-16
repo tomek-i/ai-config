@@ -25,6 +25,21 @@ win where they differ.
 - No hardcoded secrets. No new dependencies without a good reason.
 - Update the README / docs when behavior, setup, config, or APIs change.
 
+## UI Design
+When building or changing UI, never use these unless I or the project's design system ask for them (they make an interface look AI-generated):
+- eyebrow labels
+- monospace uppercase text
+- random serif fonts
+- purple gradients, and purple as a default accent
+- beige
+- `01 / 02 / 03` counters
+- glowing orbs
+- shockwave rings or circles popping out of things
+- decorative particles
+- long thin decorative lines
+- em dashes in any text
+- generic motion with no purpose, such as an icon floating up
+
 ## Testing
 - Always write tests for new code, behavior changes, and bug fixes (failing test first for bugs when practical).
 - Run the relevant tests, linter, and type checker before saying it's done; say so if you couldn't.

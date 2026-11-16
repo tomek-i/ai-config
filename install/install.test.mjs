@@ -185,3 +185,19 @@ test('ux-review and ui-review share an identical review template', () => {
   const read = (skill) => fs.readFileSync(path.join(REPO, 'skills', skill, 'template.html'), 'utf8').replace(/\r\n/g, '\n');
   assert.equal(read('ui-review'), read('ux-review'));
 });
+
+test('ui-review banlist matches the UI Design list in global.md', () => {
+  // The skill keeps its own copy so it works without the global instructions.
+  const listAfter = (rel, heading) => {
+    const text = fs.readFileSync(path.join(REPO, rel), 'utf8').replace(/\r\n/g, '\n');
+    const start = text.indexOf(heading);
+    assert.ok(start >= 0, `${heading} missing in ${rel}`);
+    const lines = text.slice(start).split('\n').slice(1);
+    const first = lines.findIndex((l) => l.startsWith('- '));
+    const end = lines.findIndex((l, i) => i > first && !l.startsWith('- '));
+    return lines.slice(first, end);
+  };
+  const global = listAfter('instructions/global.md', '## UI Design');
+  assert.ok(global.length > 0);
+  assert.deepEqual(listAfter('skills/ui-review/SKILL.md', '### AI slop banlist'), global);
+});
