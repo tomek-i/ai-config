@@ -44,6 +44,25 @@ If the `impeccable` skill is available, use its audit / polish guidance. Check:
   consistent
 - polish: overflow, truncation, broken images, jank, odd breakpoints
 
+### AI slop banlist
+
+These patterns make an interface look generated. Flag each one you find as a
+finding (category `AI slop`) and never use one in a proposal, unless the user
+or the project's design source of truth explicitly asks for it:
+
+- eyebrow labels
+- monospace uppercase text
+- random serif fonts
+- purple gradients, and purple as a default accent
+- beige
+- `01 / 02 / 03` counters
+- glowing orbs
+- shockwave rings or circles popping out of things
+- decorative particles
+- long thin decorative lines
+- em dashes in any text (UI copy, and the review's own text)
+- generic motion with no purpose, such as an icon floating up
+
 Each finding must be **specific and grounded in a screenshot**: one problem,
 one concrete fix (name the token, value or component). Aim for 5–20, ordered by
 impact. Note effort (S/M/L) honestly.
@@ -67,7 +86,7 @@ window.REVIEW = {
       id: "1",
       title: "Use one button radius across the app",
       area: "Buttons",              // page, component or area
-      category: "Consistency",      // Typography | Colour | Spacing | Consistency | States | Polish
+      category: "Consistency",      // Typography | Colour | Spacing | Consistency | States | Polish | AI slop
       severity: "medium",           // high | medium | low
       effort: "S",                  // S | M | L
       problem: "Primary buttons use 4px radius, dialog buttons 8px, cards 12px.",
