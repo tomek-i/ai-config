@@ -179,3 +179,9 @@ test('the skills command quotes every argument', () => {
   const command = skillsCommand('C:/My Repo', [TARGETS.codex]);
   assert.equal(command, 'npx "-y" "skills" "add" "C:/My Repo" "-g" "--skill" "*" "-y" "-a" "codex"');
 });
+
+test('ux-review and ui-review share an identical review template', () => {
+  // Skills can't reference each other's files, so each keeps its own copy.
+  const read = (skill) => fs.readFileSync(path.join(REPO, 'skills', skill, 'template.html'), 'utf8').replace(/\r\n/g, '\n');
+  assert.equal(read('ui-review'), read('ux-review'));
+});

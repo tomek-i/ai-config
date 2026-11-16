@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UX Review</title>
+<title>Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap" rel="stylesheet">
@@ -100,7 +100,7 @@
 <body>
 <header class="top">
   <div class="wrap">
-    <h1 id="title">UX review</h1>
+    <h1 id="title">Review</h1>
     <span class="counts" id="counts"></span>
     <div class="filters" id="filters" role="group" aria-label="Filter suggestions">
       <button data-f="all" class="on">All</button>
@@ -127,9 +127,13 @@
 </dialog>
 <script>
 (() => {
-  const D = window.UX_REVIEW || { title: "UX review", suggestions: [] };
+  // Shared by the ux-review and ui-review skills; `kind` sets the labels.
+  // window.UX_REVIEW is the older name, kept so existing review pages still load.
+  const D = window.REVIEW || window.UX_REVIEW || { suggestions: [] };
+  const KIND = D.kind || "UX review";
+  const SLUG = KIND.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const S = D.suggestions || [];
-  const KEY = "ux-review:" + (D.id || (D.title + ":" + (D.date || "")));
+  const KEY = SLUG + ":" + (D.id || (D.title + ":" + (D.date || "")));
   const LABEL = { approve: "APPROVE", decline: "DECLINE", changes: "APPROVE WITH CHANGES", pending: "PENDING" };
   let state = {};
   try { state = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { state = {}; }
@@ -256,8 +260,8 @@
   }
 
   // ---- Page ----
-  document.title = D.title || "UX review";
-  document.getElementById("title").textContent = D.title || "UX review";
+  document.title = D.title || KIND;
+  document.getElementById("title").textContent = D.title || KIND;
   const meta = [D.app, D.url, D.date].filter(Boolean).map(esc).join(" · ");
   document.getElementById("intro").innerHTML =
     (meta ? `<div class="meta">${meta} · ${S.length} suggestion${S.length === 1 ? "" : "s"}</div>` : "") +
@@ -339,7 +343,7 @@
   // ---- Export ----
   const decisions = () => S.map(s => ({ id: s.id, title: s.title, decision: decisionOf(s.id), note: (state[s.id] && state[s.id].note) || "" }));
   function exportText() {
-    const out = [`# UX review decisions: ${D.title || ""}${D.date ? " (" + D.date + ")" : ""}`, ""];
+    const out = [`# ${KIND} decisions:${D.title || ""}${D.date ? " (" + D.date + ")" : ""}`, ""];
     for (const d of decisions()) {
       out.push(`- **${LABEL[d.decision]}** #${d.id} ${d.title}`);
       if (d.decision === "changes" && d.note.trim()) out.push(`  - Changes: ${d.note.trim().replace(/\s*\n\s*/g, " / ")}`);
@@ -363,7 +367,7 @@
     const blob = new Blob([JSON.stringify({ id: D.id, title: D.title, date: D.date, decisions: decisions() }, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "ux-review-decisions.json";
+    a.download = SLUG + "-decisions.json";
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });

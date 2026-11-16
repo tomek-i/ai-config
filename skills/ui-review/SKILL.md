@@ -50,10 +50,43 @@ impact. Note effort (S/M/L) honestly.
 
 ## 4. Build the page
 
-To be defined: template, data format, and whether findings get before/after
-visuals (wireframes, CSS mock-ups or annotated screenshots).
+1. Create `./docs/ui-review/<date>/`.
+2. Copy `template.html` from this skill folder to
+   `./docs/ui-review/<date>/index.html`. Don't edit it.
+3. Write `./docs/ui-review/<date>/data.js`:
 
-Make sure the project `.gitignore` contains `docs/ui-review/`.
+```js
+window.REVIEW = {
+  kind: "UI review",                // labels the page and the copied decisions
+  id: "my-app-ui-2026-11-17",       // unique; decisions are remembered per id
+  title: "My App - UI review",
+  app: "My App", url: "http://localhost:3000", date: "2026-11-17",
+  summary: "One or two sentences on the overall visual state and the biggest themes.",
+  suggestions: [
+    {
+      id: "1",
+      title: "Use one button radius across the app",
+      area: "Buttons",              // page, component or area
+      category: "Consistency",      // Typography | Colour | Spacing | Consistency | States | Polish
+      severity: "medium",           // high | medium | low
+      effort: "S",                  // S | M | L
+      problem: "Primary buttons use 4px radius, dialog buttons 8px, cards 12px.",
+      proposal: "Use the --radius-md token (6px) for all buttons.",
+      impact: "The app reads as one product; fewer one-off styles.",
+      changes: ["Button component: border-radius var(--radius-md)", "Remove the dialog button override"],
+      screenshots: [
+        { src: "screenshots/03-buttons.png", caption: "Buttons on the settings page",
+          highlights: [{ x: 10, y: 40, w: 25, h: 10 }] }   // optional red frames, in % of the image
+      ],
+      wireframe: { before: [ /* optional Excalidraw elements */ ], after: [] }
+    }
+  ]
+};
+```
+
+4. Make sure the project `.gitignore` contains `docs/ui-review/`.
+5. Open the page for the user (Windows: `start "" "docs/ui-review/<date>/index.html"`,
+   macOS: `open ...`) and tell them the path.
 
 ## 5. Act on the decisions
 
