@@ -36,6 +36,7 @@ ai-config/
 │   ├── pr-review-fix/
 │   ├── pr-screenshots/          # + scripts/upload-pr-screenshots
 │   ├── pull-request/
+│   ├── ui-review/
 │   └── ux-review/
 ├── hooks/
 │   └── claude/
@@ -97,6 +98,7 @@ All five were written by me with Claude in October 2026.
 | `pr-screenshots` | Upload screenshots to a PR body, never committed | Yes (needs its script) |
 | `pr-review-fix` | Address all review comments on a PR | Yes |
 | `ux-review` | Playwright walkthrough → HTML UX review page (+ `template.html`) | Needs Playwright MCP |
+| `ui-review` | Visual design / consistency review → HTML page (WIP) | Needs Playwright MCP |
 
 Not included: `create-agents` and `create-skill`. Their origin is unknown (no
 author or source, dated 2026-06-22) and Anthropic's `skill-creator` and

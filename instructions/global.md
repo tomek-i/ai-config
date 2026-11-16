@@ -55,4 +55,5 @@ Confirm with me first before anything destructive or hard to undo: deleting file
 ## Skills
 - GitHub issues: `github-issue` skill.
 - Pull requests: `pull-request` skill (description, before/after screenshots, feature video).
-- UI/UX review of an app: `ux-review` skill.
+- UX review of an app (flows, usability): `ux-review` skill.
+- UI review of an app (visual design, consistency): `ui-review` skill.
