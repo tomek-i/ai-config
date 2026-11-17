@@ -1,13 +1,22 @@
 ---
 name: ux-review
-description: Walk through a running web app with the Playwright MCP, screenshot it, and produce UX improvement suggestions (flows, navigation, friction, copy, feedback, usability) as a local HTML review page - each suggestion with the problem, proposal and impact, the real screenshot, before/after Excalidraw-style wireframes, and Approve / Decline / Approve with changes buttons. Use when the user asks for a "UX review", "UX audit", "usability review", to "go through the app and suggest improvements", for a general "UI/UX review", or invokes /ux-review. For visual design and consistency (typography, colour, spacing, components) use the `ui-review` skill instead.
+description: Walk through a running web app with the Playwright MCP, screenshot it, and produce UX improvement suggestions (flows, navigation, friction, copy, feedback, usability) as a local HTML review page - each suggestion with the problem, proposal and impact, the real screenshot, before/after Excalidraw-style wireframes, and Approve / Decline / Approve with changes buttons. Use when the user asks for a "UX review", "UX audit", "usability review", to "go through the app and suggest improvements", for a general "UI/UX review", or invokes /ux-review. For visual design and consistency (typography, colour, spacing, components) use the `ui-review` skill instead. Options: `--no-open` builds the page without opening it; `--issues` publishes the review as a GitHub epic with one sub-issue per suggestion instead of a page.
+argument-hint: "[url] [--no-open] [--issues]"
 ---
 
 # UX review
 
-Output: a local, self-contained review page at `./docs/ux-review/<YYYY-MM-DD>/index.html` (gitignored, never committed).
+Output: a local, self-contained review page at `./docs/ux-review/<YYYY-MM-DD>/index.html` (gitignored, never committed), or GitHub issues with `--issues`.
+
+## Options
+Read them from the arguments, or from plain words in the request:
+- `--no-open` ("don't open it"): build the page as usual but don't open it; just give the path.
+- `--issues` ("as GitHub issues", "create an epic"): no page. Publish an epic issue with one sub-issue per suggestion, each with its screenshot and before/after wireframes. The user decides on GitHub: an open sub-issue is approved, a closed one is declined.
+
+The **work folder** is `./docs/ux-review/<date>/` by default, and `<os temp>/ux-review-<date>/` with `--issues` so the review leaves nothing in the project.
 
 ## 1. Scope
+- With `--issues`, first check that `gh auth status` passes and the project has a GitHub remote (`gh repo view`). If not, stop and say so before walking the app.
 - Find the app URL: an argument, a running dev server, or start one from the project's scripts.
 - If the user named pages/flows or a focus (e.g. "onboarding", "mobile"), stick to it. Otherwise cover the main pages and primary flows.
 - If the app needs login, **ask the user** how to authenticate (test credentials, they sign in once in the Playwright browser, or skip protected pages).
@@ -15,7 +24,7 @@ Output: a local, self-contained review page at `./docs/ux-review/<YYYY-MM-DD>/in
 ## 2. Walk through and screenshot
 - Use the Playwright MCP, headless preferred. Desktop viewport (1440×900); add mobile (390×844) if the app is meant to be responsive.
 - Go through each page/flow like a real user: empty states, loading, errors, forms with invalid input, hover/focus states where relevant.
-- Save screenshots to `./docs/ux-review/<date>/screenshots/` with readable names (`01-dashboard.png`). Playwright MCP may save to its own output folder, so check where the file landed and move it.
+- Save screenshots to `<work folder>/screenshots/` with readable names (`01-dashboard.png`). Playwright MCP may save to its own output folder, so check where the file landed and move it.
 - Crop to the area a suggestion is about when the full page would hide it.
 
 ## 3. Find improvements
@@ -49,9 +58,11 @@ For each suggestion, draw a **before** and **after** wireframe in the Excalidraw
 - Use `fontSize` ≥ 16, no emoji. `cameraUpdate` / `delete` pseudo-elements are ignored by the page (the view fits the content).
 
 ## 5. Build the page
-1. Create `./docs/ux-review/<date>/`.
-2. Copy `template.html` from this skill folder to `./docs/ux-review/<date>/index.html`. Don't edit it.
-3. Write `./docs/ux-review/<date>/data.js`:
+With `--issues` the page is still built in the temp work folder, only to render the wireframes for the issues; it is never opened or kept.
+
+1. Create the work folder.
+2. Copy `template.html` from this skill folder to `<work folder>/index.html`. Don't edit it.
+3. Write `<work folder>/data.js`:
 
 ```js
 window.REVIEW = {
@@ -82,10 +93,14 @@ window.REVIEW = {
 };
 ```
 
-4. Make sure the project `.gitignore` contains `docs/ux-review/` (add it if missing).
-5. Open the page for the user (Windows: `start "" "docs/ux-review/<date>/index.html"`, macOS: `open ...`) and tell them the path.
+4. Make sure the project `.gitignore` contains `docs/ux-review/` (add it if missing). Skip with `--issues`.
+5. Open the page for the user (Windows: `start "" "docs/ux-review/<date>/index.html"`, macOS: `open ...`) and tell them the path. With `--no-open`, only give the path. With `--issues`, publish instead: follow `github-issues.md` in this skill folder, with kind `UX review` and label `ux-review`.
 
 ## 6. Act on the decisions
+### With `--issues`
+When the user comes back to the epic, read its sub-issues as `github-issues.md` describes: open ones are approved (their comments are "approve with changes" notes), closed ones are declined. Then implement the approved ones as below.
+
+### With the page
 The user marks each suggestion **Approve / Decline / Approve with changes** (with a note), then clicks **Copy decisions** and pastes the result back.
 
 Then ask what they want next:
