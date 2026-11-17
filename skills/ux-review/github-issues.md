@@ -19,7 +19,7 @@ available and stop it afterwards). Viewport 1440×900. For each suggestion
 - `#s-<id> .shot` for each screenshot (`<id>-shot-<n>.png`), so the red
   highlight frames are included
 - `#s-<id> .wf[data-wf="before"]` and `#s-<id> .wf[data-wf="after"]`
-  (`<id>-before.png`, `<id>-after.png`), when the suggestion has wireframes
+  (`<id>-before.png`, `<id>-after.png`), for each side that has elements
 
 Take them with element refs from a snapshot, or with `browser_run_code`
 calling `page.locator(selector).screenshot({ path })`. Check that each file
