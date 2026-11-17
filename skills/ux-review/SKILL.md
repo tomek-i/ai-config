@@ -1,6 +1,6 @@
 ---
 name: ux-review
-description: Walk through a running web app with the Playwright MCP, screenshot it, and produce UI/UX improvement suggestions as a local HTML review page - each suggestion with the problem, proposal and impact, the real screenshot, before/after Excalidraw-style wireframes, and Approve / Decline / Approve with changes buttons. Use when the user asks to "review the UI/UX", "go through the app and suggest improvements", "UX audit", "UI suggestions", or invokes /ux-review.
+description: Walk through a running web app with the Playwright MCP, screenshot it, and produce UX improvement suggestions (flows, navigation, friction, copy, feedback, usability) as a local HTML review page - each suggestion with the problem, proposal and impact, the real screenshot, before/after Excalidraw-style wireframes, and Approve / Decline / Approve with changes buttons. Use when the user asks for a "UX review", "UX audit", "usability review", to "go through the app and suggest improvements", for a general "UI/UX review", or invokes /ux-review. For visual design and consistency (typography, colour, spacing, components) use the `ui-review` skill instead.
 ---
 
 # UX review
@@ -41,7 +41,8 @@ For each suggestion, draw a **before** and **after** wireframe in the Excalidraw
 3. Write `./docs/ux-review/<date>/data.js`:
 
 ```js
-window.UX_REVIEW = {
+window.REVIEW = {
+  kind: "UX review",                // labels the page and the copied decisions
   id: "my-app-2026-10-22",          // unique; decisions are remembered per id
   title: "My App - UX review",
   app: "My App", url: "http://localhost:3000", date: "2026-10-22",
@@ -79,3 +80,6 @@ Then ask what they want next:
 - **Implement** them directly (plan first if non-trivial).
 
 Declined suggestions: do nothing.
+
+If the user asked for a general "UI/UX review", offer a `ui-review` pass for
+visual design and consistency once this one is done.

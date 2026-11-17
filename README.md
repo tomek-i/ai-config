@@ -24,6 +24,7 @@
 | `pr-screenshots` | Uploads screenshots to a PR body as GitHub attachments (never committed) |
 | `pr-review-fix` | Works through every review comment on a PR |
 | `ux-review` | Walks a running web app and produces an HTML page of UX suggestions |
+| `ui-review` | Reviews a running web app's visual design and consistency (work in progress) |
 
 ### Hooks (Claude Code)
 
