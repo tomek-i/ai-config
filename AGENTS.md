@@ -14,7 +14,10 @@ OpenCode and GitHub Copilot CLI. See `README.md`.
   comes from `overlay` in `install/targets.mjs`. Don't name one `claude.md`:
   on Windows it is read as `CLAUDE.md` and loaded as folder instructions.
 - `skills/<name>/SKILL.md` — one skill per folder, helper files next to it.
-- `hooks/claude/` — Claude Code hook scripts and `settings.hooks.json`.
+- `hooks/claude/` — Claude Code hook scripts, `hooks.json` (the `dev-hooks`
+  plugin) and `settings.hooks.json` (what the installer merges into settings).
+- `.claude-plugin/marketplace.json` — Claude Code marketplace: one plugin per
+  skill, plus `dev-hooks`. Every skill needs an entry; the tests check it.
 - `install/` — `install.mjs`, `targets.mjs` (all tool paths), tests.
 - `external.md` — third-party skills/plugins; never vendor them here.
 
@@ -30,8 +33,10 @@ checks the content: skill front matter and file references, hook scripts, and
 that no tracked file contains a machine path, an email address or a secret.
 The software factory runs the same command as its quality gate
 (`.factory/config.yaml`).
-The installer only adds missing hook entries; changing an existing one in
-`settings.hooks.json` does not update installed settings.
+Claude Code gets skills and hooks from the marketplace, not the installer.
+The installer only merges `settings.hooks.json` (the default permission mode)
+into Claude's settings and retires hook entries and skill copies older
+installs left there.
 
 ## Conventions
 

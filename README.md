@@ -11,7 +11,8 @@
 | `instructions/global.md` | Global instructions shared by every tool |
 | `instructions/<tool>.md` | Optional tool-specific additions (`claude-code.md` today) |
 | `skills/` | My own skills in the [Agent Skills](https://agentskills.io) `SKILL.md` format |
-| `hooks/claude/` | Claude Code hooks and the settings they need |
+| `hooks/claude/` | Claude Code hooks (`dev-hooks` plugin) and the installer's settings fragment |
+| `.claude-plugin/` | Marketplace manifest: one Claude Code plugin per skill, plus `dev-hooks` |
 | `external.md` | Third-party skills and plugins I use, with install commands |
 | `install/` | The installer, its tests and the repo content checks |
 
@@ -26,7 +27,7 @@
 | `ux-review` | Walks a running web app and produces an HTML page of UX suggestions |
 | `ui-review` | Reviews a running web app's visual design and consistency (work in progress) |
 
-### Hooks (Claude Code)
+### Hooks (Claude Code, `dev-hooks` plugin)
 
 - `biome-format.js` — after each edit, formats the file with the project's own
   Biome, if the project has it.
@@ -35,22 +36,51 @@
 
 ## Install
 
+### Claude Code: plugin marketplace
+
+Every skill and the hooks are a separate plugin, so you pick what you want:
+
+```text
+/plugin marketplace add tomek-i/ai-config
+/plugin
+```
+
+Or install single plugins directly (Claude Code 2.1.275+):
+
+```text
+/plugin install github-issue --marketplace tomek-i/ai-config
+/plugin install pull-request --marketplace tomek-i/ai-config
+/plugin install pr-screenshots --marketplace tomek-i/ai-config
+/plugin install pr-review-fix --marketplace tomek-i/ai-config
+/plugin install ux-review --marketplace tomek-i/ai-config
+/plugin install ui-review --marketplace tomek-i/ai-config
+/plugin install dev-hooks --marketplace tomek-i/ai-config
+```
+
+`dev-hooks` holds both hooks. Switch plugins on and off in `/plugin`; get
+updates with `/plugin marketplace update ai-config`. Plugin skills show up
+with a prefix, e.g. `ux-review:ux-review`.
+
+### Installer: instructions, and skills for the other tools
+
 Needs Node 22+ (and `npx` for the skills step).
 
 ```bash
-node install/install.mjs --dry-run       # see what would change
-node install/install.mjs                 # every tool whose config folder exists
-node install/install.mjs claude codex    # only these tools
-node install/install.mjs --no-skills     # instructions and hooks only
+node install/install.mjs --dry-run              # see what would change
+node install/install.mjs                        # every tool whose config folder exists
+node install/install.mjs claude codex           # only these tools
+node install/install.mjs --no-skills            # instructions only
+node install/install.mjs --skip=pull-request    # every skill but these
+node install/install.mjs --only=ux-review,ui-review  # only these skills
 ```
 
 Tools: `claude`, `codex`, `opencode`, `copilot`.
 
 What it does for each tool:
 
-| Tool | Instructions | Skills | Hooks |
+| Tool | Instructions | Skills | Settings |
 | --- | --- | --- | --- |
-| Claude Code | `~/.claude/CLAUDE.md` | yes | `~/.claude/hooks/` + merged into `~/.claude/settings.json` |
+| Claude Code | `~/.claude/CLAUDE.md` | via the marketplace | `permissions.defaultMode` merged into `~/.claude/settings.json` |
 | Codex | `~/.codex/AGENTS.md` | yes | — |
 | OpenCode | `~/.config/opencode/AGENTS.md` | yes | — |
 | Copilot CLI | `~/.copilot/copilot-instructions.md` | yes | — |
@@ -59,13 +89,24 @@ What it does for each tool:
   header.
 - Any existing file that would change is backed up first as
   `<file>.bak-<timestamp>`. Identical files are left alone.
-- Settings are merged: only missing hooks are added, plus
-  `permissions.defaultMode: "auto"` if no mode is set. Hook entries that are
-  already installed are never updated or removed; change those by hand.
+- Settings are merged: `permissions.defaultMode: "auto"` is added if no mode
+  is set; nothing else is touched.
 - If `settings.json` is invalid JSON or has an unexpected shape, the install
   stops before writing anything.
 - Skills are installed with `npx skills add <this repo> -g`, which places them
-  in each tool's skills folder.
+  in each tool's skills folder. `--only` / `--skip` take skill folder names.
+
+Moving from an older install: the installer used to copy skills and hooks into
+`~/.claude` itself. It now retires those copies so nothing loads twice:
+
+- its hook entries are removed from `settings.json` (backed up first; your
+  other hooks stay) and `~/.claude/hooks/<script>.js` is renamed to
+  `<script>.js.bak-<timestamp>`;
+- a plain folder in `~/.claude/skills/` with the same name as one of these
+  skills is moved to `~/.claude/skills-backup/<name>-<timestamp>/`.
+  Symlinked folders are left alone.
+
+Install the `dev-hooks` plugin to keep the hooks.
 
 Paths live in `install/targets.mjs`; fix them there if a tool moves its config.
 

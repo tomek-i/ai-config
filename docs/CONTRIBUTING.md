@@ -10,7 +10,11 @@ small and focused.
    relative to the skill folder.
 3. If it needs a plugin or MCP server, say so in the skill and list it in
    `external.md`.
-4. Add it to the skills table in `README.md`.
+4. Add a plugin entry for it in `.claude-plugin/marketplace.json` (copy an
+   existing one: `source: "./"`, `strict: false`, `skills: ["./skills/<name>"]`)
+   and its `/plugin install` line in `README.md`. The tests fail without the entry.
+5. Add it to the skills table in `README.md`.
+6. Check the manifest: `claude plugin validate . --strict`.
 
 ## Change the Global Instructions
 
