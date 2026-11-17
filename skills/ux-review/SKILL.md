@@ -19,7 +19,20 @@ Output: a local, self-contained review page at `./docs/ux-review/<YYYY-MM-DD>/in
 - Crop to the area a suggestion is about when the full page would hide it.
 
 ## 3. Find improvements
-If the `impeccable` skill is available, use its critique/audit guidance. Look at:
+
+### Impeccable (optional)
+If the `impeccable` skill is available, run it before your own pass and fold its results into this review. This page stays the only output.
+- Its detector (`impeccable detect`, bundled with the skill) on the scope (the app URL or the UI source folder): a deterministic anti-pattern scan. Confirm each hit in a screenshot and drop false positives.
+- `/impeccable critique` on the main pages or flows: heuristic scoring from two independent assessments. Use its findings, but skip its closing "what next?" question; the decisions happen on this page.
+  - It wants two sub-agents. Without a sub-agent tool it runs inline and marks itself degraded; say so in the summary.
+  - If it injects its browser overlay, stop the live server with `live-server stop --keep-inject` so it doesn't edit the project's HTML. The review makes no code changes.
+- Use its `harden` reference (extreme input, API and network errors, long translations, many items, no data) and `clarify` reference (labels, error messages, consistent terms) as checklists only. Both commands edit code, so don't run them during a review.
+- If `PRODUCT.md` or `DESIGN.md` is missing, don't run `init`; say so in the summary.
+
+Say in the page `summary` which Impeccable commands ran, or that it wasn't available.
+
+### Checklist
+Look at:
 - visual hierarchy, layout, spacing, alignment, consistency
 - navigation and information architecture, friction in key flows
 - copy and labels, empty / error / loading states, feedback after actions
@@ -77,7 +90,7 @@ The user marks each suggestion **Approve / Decline / Approve with changes** (wit
 
 Then ask what they want next:
 - **Create GitHub issues** for approved suggestions (one issue each, following the issue rules in the global CLAUDE.md, with the "approve with changes" note folded into the requirements), as sub-issues under a parent issue like "UX review <date>", or
-- **Implement** them directly (plan first if non-trivial).
+- **Implement** them directly (plan first if non-trivial). If Impeccable is available, its `clarify`, `harden`, `onboard` and `adapt` commands can apply the approved suggestions; keep them scoped to those suggestions.
 
 Declined suggestions: do nothing.
 
