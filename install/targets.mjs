@@ -7,8 +7,11 @@ export const TARGETS = {
     dir: '.claude',
     instructions: '.claude/CLAUDE.md',
     overlay: 'claude-code.md',
-    skillsAgent: 'claude-code',
+    // No skillsAgent: skills and hooks come from the plugin marketplace.
+    // The folders below are only used to retire copies older installs made.
     hooksDir: '.claude/hooks',
+    skillsDir: '.claude/skills',
+    skillsBackupDir: '.claude/skills-backup',
     settings: '.claude/settings.json',
   },
   codex: {

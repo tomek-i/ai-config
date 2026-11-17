@@ -1,0 +1,28 @@
+{
+  "description": "Biome formatting after edits and a dev-ports check when Claude stops",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/biome-format.js\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dev-ports-check.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
