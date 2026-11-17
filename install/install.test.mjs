@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, test } from 'node:test';
 import {
   HEADER, MARKETPLACE, REPO, buildInstructions, install, mergeSettings, removeOldHooks, repoSkills, selectSkills, selectTargets,
-  skillsArgs, skillsCommand, writeFile,
+  frontMatter, listFlag, skillsArgs, skillsCommand, writeFile,
 } from './install.mjs';
 import { TARGETS } from './targets.mjs';
 
@@ -292,6 +292,85 @@ test('removing old hooks only touches exact installer commands', () => {
 test('the skills command quotes every argument', () => {
   const command = skillsCommand('C:/My Repo', [TARGETS.codex]);
   assert.equal(command, 'npx "-y" "skills" "add" "C:/My Repo" "-g" "--skill" "*" "-y" "-a" "codex"');
+});
+
+// Review findings: migration must never break a hook still in use, never move
+// through a linked folder, and must report rather than half-fail.
+
+test('a hook script still run by an edited entry or settings.local.json is kept', () => {
+  oldInstall();
+  const file = path.join(home, '.claude', 'settings.json');
+  const settings = JSON.parse(fs.readFileSync(file, 'utf8'));
+  // The user added an argument to the Stop hook, so it no longer matches exactly.
+  settings.hooks.Stop[0].hooks[0].command += ' --verbose';
+  fs.writeFileSync(file, JSON.stringify(settings));
+  const local = { hooks: { PreToolUse: [{ hooks: [{ command: settings.hooks.PostToolUse[0].hooks[0].command }] }] } };
+  fs.writeFileSync(path.join(home, '.claude', 'settings.local.json'), JSON.stringify(local));
+  run({ now: 8 });
+  assert.deepEqual(fs.readdirSync(path.join(home, '.claude', 'hooks')).sort(), ['biome-format.js', 'dev-ports-check.js']);
+  const after = JSON.parse(readHome('.claude/settings.json'));
+  assert.match(after.hooks.Stop[0].hooks[0].command, /--verbose/, 'edited entry kept');
+});
+
+test('an unreadable settings.local.json keeps every hook script', () => {
+  oldInstall();
+  fs.writeFileSync(path.join(home, '.claude', 'settings.local.json'), '{ broken');
+  run({ now: 8 });
+  assert.deepEqual(fs.readdirSync(path.join(home, '.claude', 'hooks')).sort(), ['biome-format.js', 'dev-ports-check.js']);
+});
+
+test('nothing is moved through a linked skills or hooks folder', () => {
+  fs.mkdirSync(path.join(home, '.claude'));
+  // e.g. ~/.claude/skills linked to a checkout of this repo's skills/
+  const realSkills = path.join(home, 'checkout', 'skills');
+  fs.mkdirSync(path.join(realSkills, 'ux-review'), { recursive: true });
+  fs.writeFileSync(path.join(realSkills, 'ux-review', 'SKILL.md'), '---\nname: ux-review\n---\n');
+  fs.symlinkSync(realSkills, path.join(home, '.claude', 'skills'), 'junction');
+  const realHooks = path.join(home, 'checkout', 'hooks');
+  fs.mkdirSync(realHooks);
+  fs.writeFileSync(path.join(realHooks, 'biome-format.js'), '// repo');
+  fs.symlinkSync(realHooks, path.join(home, '.claude', 'hooks'), 'junction');
+  const results = run({ now: 9 });
+  assert.ok(!results.some(([, status]) => status === 'moved'));
+  assert.ok(fs.existsSync(path.join(realSkills, 'ux-review', 'SKILL.md')));
+  assert.deepEqual(fs.readdirSync(realHooks), ['biome-format.js']);
+});
+
+test('a move that fails is reported, the rest still happen, and the run fails at the end', () => {
+  fs.mkdirSync(path.join(home, '.claude'));
+  skillFolder('ux-review');
+  skillFolder('ui-review');
+  // An existing, non-empty target makes this rename fail.
+  const blocked = path.join(home, '.claude', 'skills-backup', 'ux-review-9');
+  fs.mkdirSync(blocked, { recursive: true });
+  fs.writeFileSync(path.join(blocked, 'keep'), 'x');
+  const lines = [];
+  assert.throws(() => install({ home, skills: false, now: 9, log: (l) => lines.push(l) }), /Could not move 1 item/);
+  assert.ok(fs.existsSync(path.join(home, '.claude', 'skills-backup', 'ui-review-9', 'SKILL.md')), 'other moves done');
+  assert.ok(fs.existsSync(path.join(home, '.claude', 'skills', 'ux-review', 'SKILL.md')), 'failed one left in place');
+  assert.ok(lines.some((l) => l.startsWith('failed')));
+  assert.ok(lines.some((l) => l.includes('/plugin marketplace add')), 'hint still shown');
+});
+
+test('an empty --only= or --skip= is an error, not "everything"', () => {
+  assert.throws(() => listFlag(['--only='], '--only'), /needs at least one skill/);
+  assert.throws(() => listFlag(['--skip=,'], '--skip'), /needs at least one skill/);
+  assert.deepEqual(listFlag(['claude', '--only=a, b', '--only=c'], '--only'), ['a', 'b', 'c']);
+  assert.deepEqual(listFlag(['--dry-run'], '--only'), []);
+});
+
+test('--only on a Claude-only run says it does not apply there', () => {
+  const lines = [];
+  install({ home, names: ['claude'], skills: true, only: ['ux-review'], log: (l) => lines.push(l) });
+  assert.ok(lines.some((l) => l.includes('--only / --skip only apply to the other tools')));
+});
+
+test('front matter without a trailing newline or with a comment is read', () => {
+  assert.deepEqual(frontMatter('---\nname: ux-review\n---'), { name: 'ux-review' });
+  assert.deepEqual(frontMatter('---\nname: ux-review # old copy\ndescription: "a # b"\n---\n'), {
+    name: 'ux-review',
+    description: 'a # b',
+  });
 });
 
 test('ux-review and ui-review share an identical review template', () => {

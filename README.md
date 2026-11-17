@@ -106,6 +106,12 @@ Moving from an older install: the installer used to copy skills and hooks into
   skills is moved to `~/.claude/skills-backup/<name>-<timestamp>/`.
   Symlinked folders are left alone.
 
+It never moves anything through a linked folder (e.g. `~/.claude/skills` linked
+to a checkout), and keeps a hook script while any hook entry still runs it
+(one you edited, or one in `settings.local.json`). If a move fails, for example
+because Claude Code holds the folder open, it says which one and the run fails
+at the end; re-run to finish.
+
 Install the `dev-hooks` plugin to keep the hooks.
 
 Paths live in `install/targets.mjs`; fix them there if a tool moves its config.

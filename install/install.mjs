@@ -111,15 +111,36 @@ export function removeOldHooks(settings, hooksDir, scripts) {
 
 // Minimal front matter parser: top-level `key: value` lines between the first two `---`.
 export function frontMatter(text) {
-  const m = /^---\n([\s\S]*?)\n---\n/.exec(text.replace(/\r\n/g, '\n'));
+  const m = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(text.replace(/\r\n/g, '\n'));
   if (!m) return null;
   const out = {};
   for (const line of m[1].split('\n')) {
     const kv = /^([A-Za-z][\w-]*):\s*(.*)$/.exec(line);
-    if (kv) out[kv[1]] = kv[2].replace(/^["']|["']$/g, '').trim();
+    if (!kv) continue;
+    const v = kv[2].trim();
+    const quoted = /^(["'])(.*)\1/.exec(v);
+    out[kv[1]] = quoted ? quoted[2] : v.replace(/\s+#.*$/, '');
   }
   return out;
 }
+
+// True when no link sits anywhere on the way to p, so renaming p moves p
+// itself, not the target of a linked parent (e.g. ~/.claude/skills linked to
+// a repo checkout). Unresolvable paths count as not plain.
+export function isPlainPath(p) {
+  try {
+    const real = fs.realpathSync.native(p);
+    const want = path.resolve(p);
+    return process.platform === 'win32' ? real.toLowerCase() === want.toLowerCase() : real === want;
+  } catch {
+    return false;
+  }
+}
+
+const hookCommands = (settings) =>
+  Object.values(isObject(settings?.hooks) ? settings.hooks : {})
+    .filter(Array.isArray)
+    .flatMap((groups) => groups.flatMap((g) => (Array.isArray(g?.hooks) ? g.hooks.map((h) => String(h?.command ?? '')) : [])));
 
 export const repoSkills = (repo) =>
   fs.readdirSync(path.join(repo, 'skills'), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
@@ -142,18 +163,38 @@ export function planClaude(repo, home, target, now = Date.now()) {
     throw new Error(`${settingsFile}: ${err.message}. Fix it and re-run; nothing was changed.`);
   }
 
+  // A script stays while any hook we leave in place still runs it: an entry
+  // the user edited, or one in settings.local.json. An unreadable local file
+  // counts as using everything, so nothing breaks.
+  const localFile = path.join(path.dirname(settingsFile), 'settings.local.json');
+  let remaining = hookCommands(merged);
+  let localUnreadable = false;
+  if (fs.existsSync(localFile)) {
+    try {
+      remaining = remaining.concat(hookCommands(JSON.parse(read(localFile))));
+    } catch {
+      localUnreadable = true;
+    }
+  }
+  const norm = (s) => {
+    const fwd = s.replaceAll('\\', '/');
+    return process.platform === 'win32' ? fwd.toLowerCase() : fwd;
+  };
+  const stillUsed = (script) =>
+    localUnreadable || remaining.some((c) => norm(c).includes(norm(`${hooksDir}/${script}`)));
+
   const moves = [];
   for (const script of scripts) {
     const file = path.join(hooksDir, script);
-    if (fs.existsSync(file)) moves.push([file, `${file}.bak-${now}`]);
+    if (fs.existsSync(file) && isPlainPath(file) && !stillUsed(script)) moves.push([file, `${file}.bak-${now}`]);
   }
   // A backup inside the skills folder would still load as a skill, so stale
-  // copies go to a sibling folder. Symlinks (e.g. from `npx skills`) and
-  // folders of another skill with the same name are left alone.
+  // copies go to a sibling folder. Links (e.g. from `npx skills`, or a linked
+  // skills folder) and folders of another skill with the same name are left alone.
   for (const name of repoSkills(repo)) {
     const dir = path.join(home, target.skillsDir, name);
     const skillFile = path.join(dir, 'SKILL.md');
-    if (!fs.existsSync(skillFile) || fs.lstatSync(dir).isSymbolicLink()) continue;
+    if (!fs.existsSync(skillFile) || !isPlainPath(dir)) continue;
     if (frontMatter(read(skillFile))?.name !== name) continue;
     moves.push([dir, path.join(home, target.skillsBackupDir, `${name}-${now}`)]);
   }
@@ -225,22 +266,35 @@ export function install({
     results.push([file, status]);
     log(`${prefix}${status.padEnd(10)} ${file}`);
   }
+  // A move can fail on Windows (EPERM/EBUSY while Claude Code or a terminal
+  // holds the folder). Keep going, report each failure, and fail at the end;
+  // a re-run picks up what is left.
+  const failed = [];
   for (const [from, to] of moves) {
-    if (!dryRun) {
-      fs.mkdirSync(path.dirname(to), { recursive: true });
-      fs.renameSync(from, to);
+    try {
+      if (!dryRun) {
+        fs.mkdirSync(path.dirname(to), { recursive: true });
+        fs.renameSync(from, to);
+      }
+      results.push([from, 'moved']);
+      log(`${prefix}${'moved'.padEnd(10)} ${from} -> ${to}`);
+    } catch (err) {
+      failed.push(`${from}: ${err.code ?? err.message}`);
+      results.push([from, 'failed']);
+      log(`${'failed'.padEnd(10)} ${from} (${err.code ?? err.message})`);
     }
-    results.push([from, 'moved']);
-    log(`${prefix}${'moved'.padEnd(10)} ${from} -> ${to}`);
   }
 
+  const skillTargets = targets.filter((t) => t.skillsAgent);
   if (targets.some((t) => !t.skillsAgent)) {
     log(`Claude Code: skills and hooks come from the plugin marketplace. In Claude Code run
   /plugin marketplace add ${MARKETPLACE}
 then pick the plugins you want in /plugin.`);
+    if ((only.length || skip.length) && !skillTargets.length) {
+      log('--only / --skip only apply to the other tools; for Claude Code pick plugins in /plugin.');
+    }
   }
 
-  const skillTargets = targets.filter((t) => t.skillsAgent);
   if (skills && skillTargets.length) {
     const command = skillsCommand(repo, skillTargets, skillNames);
     if (dryRun) {
@@ -251,12 +305,20 @@ then pick the plugins you want in /plugin.`);
       if (r.status !== 0) throw new Error(`Skills install failed (npx skills exited ${r.status})`);
     }
   }
+  if (failed.length) {
+    throw new Error(`Could not move ${failed.length} item(s); close what holds them and re-run:\n  ${failed.join('\n  ')}`);
+  }
   return results;
 }
 
-// `--only=a,b` -> ['a', 'b']
-const listFlag = (argv, flag) =>
-  argv.filter((a) => a.startsWith(`${flag}=`)).flatMap((a) => a.slice(flag.length + 1).split(',')).map((s) => s.trim()).filter(Boolean);
+// `--only=a,b` -> ['a', 'b']. A flag given with nothing after the = is an
+// error, so `--only=` can't silently mean "everything".
+export function listFlag(argv, flag) {
+  const given = argv.filter((a) => a.startsWith(`${flag}=`));
+  const list = given.flatMap((a) => a.slice(flag.length + 1).split(',')).map((s) => s.trim()).filter(Boolean);
+  if (given.length && !list.length) throw new Error(`${flag}= needs at least one skill name, e.g. ${flag}=ux-review`);
+  return list;
+}
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const argv = process.argv.slice(2);
