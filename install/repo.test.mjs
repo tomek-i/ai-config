@@ -112,12 +112,14 @@ test('hook scripts parse and every configured hook points at one', () => {
     const r = spawnSync(process.execPath, ['--check', path.join(dir, script)], { encoding: 'utf8' });
     assert.equal(r.status, 0, `${script} does not parse:\n${r.stderr}`);
   }
-  // The dev-hooks plugin's hooks.json; the installer's settings fragment no longer carries hooks.
-  const plugin = JSON.parse(read('hooks/claude/hooks.json'));
+  // The dev-hooks plugin is rooted at hooks/claude, so its hooks.json sits in
+  // the default spot (hooks/hooks.json under the plugin root) and the scripts
+  // are next to the root. The installer's settings fragment carries no hooks.
+  const plugin = JSON.parse(read('hooks/claude/hooks/hooks.json'));
   const commands = Object.values(plugin.hooks ?? {}).flatMap((groups) => groups.flatMap((g) => g.hooks.map((h) => h.command)));
   assert.ok(commands.length > 0);
   for (const command of commands) {
-    const m = /\$\{CLAUDE_PLUGIN_ROOT\}\/hooks\/claude\/([\w.-]+)/.exec(command);
+    const m = /\$\{CLAUDE_PLUGIN_ROOT\}\/([\w.-]+\.js)"/.exec(command);
     assert.ok(m, `hook command does not run a script from hooks/claude: ${command}`);
     assert.ok(scripts.includes(m[1]), `hook command points at missing ${m[1]}`);
   }
@@ -132,14 +134,22 @@ test('the marketplace lists every skill once and every entry points at a real fo
   const listed = [];
   for (const p of market.plugins) {
     assert.ok(p.description, `${p.name}: description missing`);
+    if (p.name === 'dev-hooks') continue;
+    // Rooted at the repo, a plugin without an explicit skills list would load every skill.
     assert.equal(p.source, './', `${p.name}: source must be ./ (the repo root)`);
-    for (const rel of p.skills ?? []) {
+    assert.ok(p.skills?.length, `${p.name}: must list its skills`);
+    for (const rel of p.skills) {
       assert.ok(fs.existsSync(path.join(REPO, rel, 'SKILL.md')), `${p.name}: ${rel} has no SKILL.md`);
       listed.push(path.basename(rel));
     }
-    if (p.hooks) assert.ok(fs.existsSync(path.join(REPO, p.hooks)), `${p.name}: ${p.hooks} missing`);
-    assert.ok(p.skills?.length || p.hooks, `${p.name}: lists no skills or hooks`);
   }
   assert.deepEqual(listed.sort(), skillNames().sort(), 'every skill folder has exactly one marketplace entry');
-  assert.ok(market.plugins.some((p) => p.hooks === './hooks/claude/hooks.json'), 'hooks plugin listed');
+
+  // The hooks plugin gets its own root so it picks up no skills, and the repo
+  // root has no hooks/hooks.json, which every skill plugin would load.
+  const hooks = market.plugins.find((p) => p.name === 'dev-hooks');
+  assert.equal(hooks?.source, './hooks/claude');
+  assert.ok(fs.existsSync(path.join(REPO, 'hooks', 'claude', 'hooks', 'hooks.json')));
+  assert.ok(!fs.existsSync(path.join(REPO, 'hooks', 'hooks.json')), 'hooks/hooks.json at the root would load in every plugin');
+  assert.equal(fs.readdirSync(path.join(REPO, 'hooks', 'claude')).some((f) => f === 'skills' || f === 'SKILL.md'), false);
 });

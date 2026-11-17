@@ -14,8 +14,11 @@ OpenCode and GitHub Copilot CLI. See `README.md`.
   comes from `overlay` in `install/targets.mjs`. Don't name one `claude.md`:
   on Windows it is read as `CLAUDE.md` and loaded as folder instructions.
 - `skills/<name>/SKILL.md` — one skill per folder, helper files next to it.
-- `hooks/claude/` — Claude Code hook scripts, `hooks.json` (the `dev-hooks`
-  plugin) and `settings.hooks.json` (what the installer merges into settings).
+- `hooks/claude/` — the `dev-hooks` plugin root: hook scripts and
+  `hooks/hooks.json` (the default spot Claude Code reads), plus
+  `settings.hooks.json` (what the installer merges into settings). Keep skills
+  out of it, and never add a `hooks/hooks.json` at the repo root: every skill
+  plugin is rooted there and would load it.
 - `.claude-plugin/marketplace.json` — Claude Code marketplace: one plugin per
   skill, plus `dev-hooks`. Every skill needs an entry; the tests check it.
 - `install/` — `install.mjs`, `targets.mjs` (all tool paths), tests.

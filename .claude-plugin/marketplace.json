@@ -13,7 +13,9 @@
       "description": "Write GitHub issues as Why / What / Acceptance criteria, split big work into sub-issues",
       "source": "./",
       "strict": false,
-      "skills": ["./skills/github-issue"],
+      "skills": [
+        "./skills/github-issue"
+      ],
       "category": "productivity"
     },
     {
@@ -21,7 +23,9 @@
       "description": "PR descriptions in plain language with before/after screenshots and a walkthrough video for new features",
       "source": "./",
       "strict": false,
-      "skills": ["./skills/pull-request"],
+      "skills": [
+        "./skills/pull-request"
+      ],
       "category": "productivity"
     },
     {
@@ -29,7 +33,9 @@
       "description": "Upload screenshots to a PR body as GitHub attachments, never committed",
       "source": "./",
       "strict": false,
-      "skills": ["./skills/pr-screenshots"],
+      "skills": [
+        "./skills/pr-screenshots"
+      ],
       "category": "productivity"
     },
     {
@@ -37,7 +43,9 @@
       "description": "Work through every review comment on a PR",
       "source": "./",
       "strict": false,
-      "skills": ["./skills/pr-review-fix"],
+      "skills": [
+        "./skills/pr-review-fix"
+      ],
       "category": "productivity"
     },
     {
@@ -45,7 +53,9 @@
       "description": "Walk a running web app and produce an HTML page of UX suggestions to approve or decline",
       "source": "./",
       "strict": false,
-      "skills": ["./skills/ux-review"],
+      "skills": [
+        "./skills/ux-review"
+      ],
       "category": "design"
     },
     {
@@ -53,15 +63,16 @@
       "description": "Review a running web app's visual design and consistency, including AI slop, as an HTML page to approve or decline",
       "source": "./",
       "strict": false,
-      "skills": ["./skills/ui-review"],
+      "skills": [
+        "./skills/ui-review"
+      ],
       "category": "design"
     },
     {
       "name": "dev-hooks",
       "description": "Format each edit with the project's own Biome; warn when dev-server ports are still open at the end of a turn",
-      "source": "./",
+      "source": "./hooks/claude",
       "strict": false,
-      "hooks": "./hooks/claude/hooks.json",
       "category": "development"
     }
   ]

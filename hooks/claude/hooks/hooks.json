@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/claude/biome-format.js\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/biome-format.js\"",
             "timeout": 30
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/claude/dev-ports-check.js\"",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dev-ports-check.js\"",
             "timeout": 10
           }
         ]
