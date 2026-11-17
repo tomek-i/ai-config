@@ -3,7 +3,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, test } from 'node:test';
-import { HEADER, REPO, buildInstructions, install, mergeSettings, selectTargets, skillsArgs, skillsCommand, writeFile } from './install.mjs';
+import {
+  HEADER, MARKETPLACE, REPO, buildInstructions, install, mergeSettings, removeOldHooks, repoSkills, selectSkills, selectTargets,
+  skillsArgs, skillsCommand, writeFile,
+} from './install.mjs';
 import { TARGETS } from './targets.mjs';
 
 let home;
@@ -74,20 +77,19 @@ test('dry run writes nothing', () => {
   assert.ok(results.some(([, status]) => status === 'backed-up'));
 });
 
-test('claude install copies hooks and merges settings', () => {
+test('claude install merges settings and leaves hooks to the plugin', () => {
   fs.mkdirSync(path.join(home, '.claude'));
   fs.writeFileSync(
     path.join(home, '.claude', 'settings.json'),
     JSON.stringify({ model: 'opus', permissions: { defaultMode: 'plan', allow: ['Bash(ls)'] } }),
   );
   run({});
-  assert.ok(fs.existsSync(path.join(home, '.claude', 'hooks', 'biome-format.js')));
+  assert.ok(!fs.existsSync(path.join(home, '.claude', 'hooks')));
   const settings = JSON.parse(readHome('.claude/settings.json'));
   assert.equal(settings.model, 'opus');
   assert.equal(settings.permissions.defaultMode, 'plan', 'existing mode is kept');
   assert.deepEqual(settings.permissions.allow, ['Bash(ls)']);
-  assert.match(settings.hooks.Stop[0].hooks[0].command, /dev-ports-check\.js/);
-  assert.ok(!settings.hooks.Stop[0].hooks[0].command.includes('{{HOOKS_DIR}}'));
+  assert.equal(settings.hooks, undefined);
 });
 
 test('re-running the install changes nothing', () => {
@@ -121,14 +123,40 @@ test('settings merge sets the default mode only when missing', () => {
   assert.equal(mergeSettings({}, fragment, '/h').permissions.defaultMode, 'auto');
 });
 
-test('skills are installed for every selected tool', () => {
-  const args = skillsArgs('/repo', [TARGETS.claude, TARGETS.copilot]);
+test('skills are installed for every selected tool except Claude Code', () => {
+  const args = skillsArgs('/repo', [TARGETS.claude, TARGETS.codex, TARGETS.copilot]);
   assert.deepEqual(args.slice(0, 4), ['-y', 'skills', 'add', '/repo']);
   assert.ok(args.includes('-g'));
   assert.deepEqual(
     args.filter((_, i) => args[i - 1] === '-a'),
-    ['claude-code', 'github-copilot'],
+    ['codex', 'github-copilot'],
   );
+});
+
+test('a Claude-only install runs no skills command and points at the marketplace', () => {
+  const lines = [];
+  const results = install({ home, names: ['claude'], skills: true, log: (l) => lines.push(l) });
+  assert.ok(results.length > 0);
+  assert.ok(!lines.some((l) => l.includes('npx')));
+  assert.ok(lines.some((l) => l.includes(`/plugin marketplace add ${MARKETPLACE}`)));
+});
+
+test('--only and --skip pick the skills passed to npx skills', () => {
+  const all = repoSkills(REPO);
+  assert.ok(all.includes('pull-request'));
+  assert.deepEqual(selectSkills(REPO), ['*']);
+  assert.deepEqual(selectSkills(REPO, { only: ['ux-review', 'ui-review'] }), ['ux-review', 'ui-review']);
+  assert.deepEqual(selectSkills(REPO, { skip: ['pull-request'] }), all.filter((n) => n !== 'pull-request'));
+  const args = skillsArgs('/repo', [TARGETS.codex], ['ux-review', 'ui-review']);
+  assert.deepEqual(args.filter((_, i) => args[i - 1] === '--skill'), ['ux-review', 'ui-review']);
+});
+
+test('--only and --skip reject unknown skills, both at once, and skipping everything', () => {
+  assert.throws(() => selectSkills(REPO, { only: ['nope'] }), /Unknown skill\(s\): nope/);
+  assert.throws(() => selectSkills(REPO, { skip: ['nope'] }), /Unknown skill/);
+  assert.throws(() => selectSkills(REPO, { only: ['ux-review'], skip: ['ui-review'] }), /not both/);
+  assert.throws(() => selectSkills(REPO, { skip: repoSkills(REPO) }), /no skills/);
+  assert.throws(() => run({ only: ['nope'] }), /Unknown skill/);
 });
 
 test('dry run leaves settings and hooks untouched', () => {
@@ -145,7 +173,7 @@ test('settings.json with a BOM is merged', () => {
   run({});
   const settings = JSON.parse(readHome('.claude/settings.json'));
   assert.equal(settings.model, 'opus');
-  assert.ok(settings.hooks.Stop);
+  assert.equal(settings.permissions.defaultMode, 'auto');
 });
 
 test('invalid settings.json fails before anything is written', () => {
@@ -155,11 +183,17 @@ test('invalid settings.json fails before anything is written', () => {
   assert.deepEqual(fs.readdirSync(path.join(home, '.claude')), ['settings.json']);
 });
 
-test('a hooks event that is not an array fails before anything is written', () => {
+test('a hooks event that is not an array fails the merge', () => {
+  const fragment = { hooks: { Stop: [{ hooks: [{ type: 'command', command: 'x' }] }] } };
+  assert.throws(() => mergeSettings({ hooks: { Stop: {} } }, fragment, '/h'), /"hooks\.Stop" must be an array/);
+});
+
+test('hooks the installer did not add are left exactly as they are', () => {
   fs.mkdirSync(path.join(home, '.claude'));
-  fs.writeFileSync(path.join(home, '.claude', 'settings.json'), '{"hooks":{"Stop":{}}}');
-  assert.throws(() => run({}), /"hooks\.Stop" must be an array/);
-  assert.deepEqual(fs.readdirSync(path.join(home, '.claude')), ['settings.json']);
+  fs.writeFileSync(path.join(home, '.claude', 'settings.json'), '{"hooks":{"Stop":{},"Odd":[{"matcher":"x"}]}}');
+  run({});
+  const settings = JSON.parse(readHome('.claude/settings.json'));
+  assert.deepEqual(settings.hooks, { Stop: {}, Odd: [{ matcher: 'x' }] });
 });
 
 test('existing hook groups without a hooks list are kept', () => {
@@ -168,11 +202,91 @@ test('existing hook groups without a hooks list are kept', () => {
   assert.deepEqual(merged.hooks.Stop, [{ matcher: 'odd' }, fragment.hooks.Stop[0]]);
 });
 
-test('hook commands use forward slashes', () => {
+// What older versions of the installer left behind (hook commands with forward slashes).
+function oldInstall() {
+  const hooksDir = path.join(home, '.claude', 'hooks');
+  fs.mkdirSync(hooksDir, { recursive: true });
+  for (const f of ['biome-format.js', 'dev-ports-check.js']) fs.writeFileSync(path.join(hooksDir, f), '// old');
+  const cmd = (f) => `node "${hooksDir.replaceAll('\\', '/')}/${f}"`;
+  const settings = {
+    model: 'opus',
+    hooks: {
+      PostToolUse: [
+        { matcher: 'Edit|Write', hooks: [{ type: 'command', command: cmd('biome-format.js'), timeout: 30 }] },
+        { hooks: [{ type: 'command', command: 'other' }] },
+      ],
+      Stop: [{ hooks: [{ type: 'command', command: cmd('dev-ports-check.js') }, { type: 'command', command: 'mine' }] }],
+      SessionStart: [{ hooks: [{ type: 'command', command: cmd('dev-ports-check.js') }] }],
+    },
+  };
+  fs.writeFileSync(path.join(home, '.claude', 'settings.json'), JSON.stringify(settings));
+}
+
+function skillFolder(name, frontName = name) {
+  const dir = path.join(home, '.claude', 'skills', name);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'SKILL.md'), `---\r\nname: ${frontName}\r\ndescription: x\r\n---\r\n`);
+  return dir;
+}
+
+test('hook entries and scripts from older installs are retired, other hooks kept', () => {
+  oldInstall();
+  run({ now: 5 });
+  const settings = JSON.parse(readHome('.claude/settings.json'));
+  assert.equal(settings.model, 'opus');
+  assert.deepEqual(settings.hooks, {
+    PostToolUse: [{ hooks: [{ type: 'command', command: 'other' }] }],
+    Stop: [{ hooks: [{ type: 'command', command: 'mine' }] }],
+  });
+  assert.ok(fs.existsSync(path.join(home, '.claude', 'settings.json.bak-5')), 'settings backed up');
+  assert.deepEqual(fs.readdirSync(path.join(home, '.claude', 'hooks')).sort(), [
+    'biome-format.js.bak-5',
+    'dev-ports-check.js.bak-5',
+  ]);
+  const again = run({ now: 6 });
+  assert.ok(again.every(([, status]) => status === 'unchanged'));
+});
+
+test('hand-copied skill folders move out of the skills folder', () => {
   fs.mkdirSync(path.join(home, '.claude'));
+  skillFolder('ux-review');
+  skillFolder('github-issue', 'someone-elses-skill');
+  skillFolder('my-own');
+  const results = run({ now: 7 });
+  assert.ok(results.some(([file, status]) => file.endsWith('ux-review') && status === 'moved'));
+  assert.deepEqual(fs.readdirSync(path.join(home, '.claude', 'skills')).sort(), ['github-issue', 'my-own']);
+  assert.ok(fs.existsSync(path.join(home, '.claude', 'skills-backup', 'ux-review-7', 'SKILL.md')));
+});
+
+test('symlinked skill folders are left alone', () => {
+  fs.mkdirSync(path.join(home, '.claude', 'skills'), { recursive: true });
+  const real = path.join(home, 'real-ux-review');
+  fs.mkdirSync(real);
+  fs.writeFileSync(path.join(real, 'SKILL.md'), '---\nname: ux-review\n---\n');
+  fs.symlinkSync(real, path.join(home, '.claude', 'skills', 'ux-review'), 'junction');
   run({});
-  const command = JSON.parse(readHome('.claude/settings.json')).hooks.Stop[0].hooks[0].command;
-  assert.ok(!command.includes('\\'));
+  assert.ok(fs.lstatSync(path.join(home, '.claude', 'skills', 'ux-review')).isSymbolicLink());
+  assert.ok(!fs.existsSync(path.join(home, '.claude', 'skills-backup')));
+});
+
+test('dry run retires nothing', () => {
+  oldInstall();
+  skillFolder('ux-review');
+  const before = readHome('.claude/settings.json');
+  const results = run({ dryRun: true });
+  assert.equal(results.filter(([, status]) => status === 'moved').length, 3);
+  assert.equal(readHome('.claude/settings.json'), before);
+  assert.deepEqual(fs.readdirSync(path.join(home, '.claude', 'hooks')).sort(), ['biome-format.js', 'dev-ports-check.js']);
+  assert.ok(fs.existsSync(path.join(home, '.claude', 'skills', 'ux-review', 'SKILL.md')));
+  assert.ok(!fs.existsSync(path.join(home, '.claude', 'skills-backup')));
+});
+
+test('removing old hooks only touches exact installer commands', () => {
+  const settings = { hooks: { Stop: [{ hooks: [{ command: 'node "/h/a.js" --extra' }, { command: 'node "/h/a.js"' }] }] } };
+  const { settings: out, removed } = removeOldHooks(settings, '/h', ['a.js']);
+  assert.equal(removed, 1);
+  assert.deepEqual(out.hooks.Stop, [{ hooks: [{ command: 'node "/h/a.js" --extra' }] }]);
+  assert.equal(settings.hooks.Stop[0].hooks.length, 2, 'input is not mutated');
 });
 
 test('the skills command quotes every argument', () => {

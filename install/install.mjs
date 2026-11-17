@@ -1,10 +1,14 @@
 #!/usr/bin/env node
-// Installs this repo's global instructions, skills and hooks into each AI tool.
+// Installs this repo's global instructions into each AI tool, and its skills
+// into every tool except Claude Code, which gets skills and hooks from the
+// plugin marketplace (.claude-plugin/marketplace.json).
 //
-//   node install/install.mjs                 all tools whose config folder exists
-//   node install/install.mjs claude codex    only these tools
-//   node install/install.mjs --dry-run       show what would change, write nothing
-//   node install/install.mjs --no-skills     skip the skills step
+//   node install/install.mjs                     all tools whose config folder exists
+//   node install/install.mjs claude codex        only these tools
+//   node install/install.mjs --dry-run           show what would change, write nothing
+//   node install/install.mjs --no-skills         skip the skills step
+//   node install/install.mjs --only=a,b          install only these skills
+//   node install/install.mjs --skip=pull-request install every skill but these
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -14,6 +18,7 @@ import { TARGETS } from './targets.mjs';
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const HEADER = '<!-- Generated from ai-config. Edit the repo, not this file. -->';
+export const MARKETPLACE = 'tomek-i/ai-config';
 
 // Git may check sources out with CRLF; installed files always use LF so
 // re-running the installer on another machine doesn't report changes.
@@ -66,9 +71,10 @@ export function mergeSettings(existing, fragment, hooksDir) {
     merged.permissions = { ...merged.permissions, defaultMode: resolved.permissions.defaultMode };
   }
 
+  if (!resolved.hooks) return merged;
   merged.hooks ??= {};
   if (!isObject(merged.hooks)) throw new Error('settings.json: "hooks" must be an object');
-  for (const [event, groups] of Object.entries(resolved.hooks ?? {})) {
+  for (const [event, groups] of Object.entries(resolved.hooks)) {
     merged.hooks[event] ??= [];
     // Refuse rather than coerce, so the user's own hooks are never lost.
     if (!Array.isArray(merged.hooks[event])) throw new Error(`settings.json: "hooks.${event}" must be an array`);
@@ -80,38 +86,106 @@ export function mergeSettings(existing, fragment, hooksDir) {
   return merged;
 }
 
-// Returns the [file, content] pairs for Claude's hooks and merged settings.
-export function planClaudeHooks(repo, home, target) {
-  const writes = [];
-  const hooksDir = path.join(home, target.hooksDir);
-  const source = path.join(repo, 'hooks', 'claude');
-  for (const name of fs.readdirSync(source).filter((f) => f.endsWith('.js'))) {
-    writes.push([path.join(hooksDir, name), read(path.join(source, name))]);
+// Removes the hook entries older versions of this installer added
+// (`node "<hooksDir>/<script>"`); the dev-hooks plugin runs them now. Other
+// hooks are kept, and groups or events only disappear when emptied here.
+export function removeOldHooks(settings, hooksDir, scripts) {
+  const old = new Set(scripts.map((s) => `node "${hooksDir}/${s}"`));
+  const out = structuredClone(settings);
+  let removed = 0;
+  for (const [event, groups] of Object.entries(out.hooks ?? {})) {
+    if (!Array.isArray(groups)) continue;
+    const kept = [];
+    for (const group of groups) {
+      const hooks = group.hooks ?? [];
+      const left = hooks.filter((h) => !old.has(h.command));
+      removed += hooks.length - left.length;
+      if (left.length !== hooks.length && left.length === 0) continue;
+      kept.push(left.length === hooks.length ? group : { ...group, hooks: left });
+    }
+    if (kept.length) out.hooks[event] = kept;
+    else if (groups.length) delete out.hooks[event];
   }
+  return { settings: out, removed };
+}
+
+// Minimal front matter parser: top-level `key: value` lines between the first two `---`.
+export function frontMatter(text) {
+  const m = /^---\n([\s\S]*?)\n---\n/.exec(text.replace(/\r\n/g, '\n'));
+  if (!m) return null;
+  const out = {};
+  for (const line of m[1].split('\n')) {
+    const kv = /^([A-Za-z][\w-]*):\s*(.*)$/.exec(line);
+    if (kv) out[kv[1]] = kv[2].replace(/^["']|["']$/g, '').trim();
+  }
+  return out;
+}
+
+export const repoSkills = (repo) =>
+  fs.readdirSync(path.join(repo, 'skills'), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
+
+// Plans Claude's settings (default mode, old hook entries removed) and the
+// moves that retire what older installs put in place: hook scripts and
+// hand-copied skill folders. Returns { writes: [file, content][], moves: [from, to][] }.
+export function planClaude(repo, home, target, now = Date.now()) {
+  const source = path.join(repo, 'hooks', 'claude');
+  const scripts = fs.readdirSync(source).filter((f) => f.endsWith('.js'));
+  const hooksDir = path.join(home, target.hooksDir);
 
   const settingsFile = path.join(home, target.settings);
   const existing = fs.existsSync(settingsFile) ? readJson(settingsFile) : {};
   const fragment = readJson(path.join(source, 'settings.hooks.json'));
   let merged;
   try {
-    merged = mergeSettings(existing, fragment, hooksDir.replaceAll('\\', '/'));
+    merged = removeOldHooks(mergeSettings(existing, fragment, hooksDir.replaceAll('\\', '/')), hooksDir.replaceAll('\\', '/'), scripts).settings;
   } catch (err) {
     throw new Error(`${settingsFile}: ${err.message}. Fix it and re-run; nothing was changed.`);
   }
-  writes.push([settingsFile, `${JSON.stringify(merged, null, 2)}\n`]);
-  return writes;
+
+  const moves = [];
+  for (const script of scripts) {
+    const file = path.join(hooksDir, script);
+    if (fs.existsSync(file)) moves.push([file, `${file}.bak-${now}`]);
+  }
+  // A backup inside the skills folder would still load as a skill, so stale
+  // copies go to a sibling folder. Symlinks (e.g. from `npx skills`) and
+  // folders of another skill with the same name are left alone.
+  for (const name of repoSkills(repo)) {
+    const dir = path.join(home, target.skillsDir, name);
+    const skillFile = path.join(dir, 'SKILL.md');
+    if (!fs.existsSync(skillFile) || fs.lstatSync(dir).isSymbolicLink()) continue;
+    if (frontMatter(read(skillFile))?.name !== name) continue;
+    moves.push([dir, path.join(home, target.skillsBackupDir, `${name}-${now}`)]);
+  }
+  return { writes: [[settingsFile, `${JSON.stringify(merged, null, 2)}\n`]], moves };
 }
 
-export function skillsArgs(repo, targets) {
-  const args = ['-y', 'skills', 'add', repo, '-g', '--skill', '*', '-y'];
-  for (const t of targets) args.push('-a', t.skillsAgent);
+// Resolves --only / --skip into the skill names to install, or ['*'] for all.
+export function selectSkills(repo, { only = [], skip = [] } = {}) {
+  if (only.length && skip.length) throw new Error('Use --only or --skip, not both.');
+  const all = repoSkills(repo);
+  const unknown = [...only, ...skip].filter((n) => !all.includes(n));
+  if (unknown.length) throw new Error(`Unknown skill(s): ${unknown.join(', ')}. Known: ${all.join(', ')}`);
+  if (only.length) return only;
+  if (!skip.length) return ['*'];
+  const rest = all.filter((n) => !skip.includes(n));
+  if (!rest.length) throw new Error('--skip leaves no skills to install.');
+  return rest;
+}
+
+// Only targets with a skillsAgent get skills from npx; Claude Code has none.
+export function skillsArgs(repo, targets, skills = ['*']) {
+  const args = ['-y', 'skills', 'add', repo, '-g'];
+  for (const s of skills) args.push('--skill', s);
+  args.push('-y');
+  for (const t of targets) if (t.skillsAgent) args.push('-a', t.skillsAgent);
   return args;
 }
 
 // One shell command string: npx is a .cmd shim on Windows, so it needs a shell,
 // and passing an args array with `shell: true` is deprecated (DEP0190).
-export const skillsCommand = (repo, targets) =>
-  ['npx', ...skillsArgs(repo, targets).map((a) => `"${a}"`)].join(' ');
+export const skillsCommand = (repo, targets, skills) =>
+  ['npx', ...skillsArgs(repo, targets, skills).map((a) => `"${a}"`)].join(' ');
 
 export function selectTargets(names, home) {
   const unknown = names.filter((n) => !TARGETS[n]);
@@ -120,30 +194,55 @@ export function selectTargets(names, home) {
   return Object.values(TARGETS).filter((t) => fs.existsSync(path.join(home, t.dir)));
 }
 
-export function install({ names = [], home = os.homedir(), repo = REPO, dryRun = false, skills = true, log = console.log }) {
+export function install({
+  names = [], home = os.homedir(), repo = REPO, dryRun = false, skills = true, only = [], skip = [],
+  log = console.log, now = Date.now(),
+}) {
   const targets = selectTargets(names, home);
+  const skillNames = selectSkills(repo, { only, skip });
   if (!targets.length) {
     log('No supported tools found. Name one explicitly, e.g. `node install/install.mjs claude`.');
     return [];
   }
 
-  // Build every file first so bad input (e.g. a broken settings.json) fails
+  // Plan everything first so bad input (e.g. a broken settings.json) fails
   // before anything is written, instead of leaving a half-done install.
   const writes = [];
+  const moves = [];
   for (const target of targets) {
     writes.push([path.join(home, target.instructions), buildInstructions(repo, target)]);
-    if (target.hooksDir) writes.push(...planClaudeHooks(repo, home, target));
+    if (target.settings) {
+      const plan = planClaude(repo, home, target, now);
+      writes.push(...plan.writes);
+      moves.push(...plan.moves);
+    }
   }
 
+  const prefix = dryRun ? '[dry-run] ' : '';
   const results = [];
   for (const [file, content] of writes) {
-    const status = writeFile(file, content, { dryRun });
+    const status = writeFile(file, content, { dryRun, now });
     results.push([file, status]);
-    log(`${dryRun ? '[dry-run] ' : ''}${status.padEnd(10)} ${file}`);
+    log(`${prefix}${status.padEnd(10)} ${file}`);
+  }
+  for (const [from, to] of moves) {
+    if (!dryRun) {
+      fs.mkdirSync(path.dirname(to), { recursive: true });
+      fs.renameSync(from, to);
+    }
+    results.push([from, 'moved']);
+    log(`${prefix}${'moved'.padEnd(10)} ${from} -> ${to}`);
   }
 
-  if (skills) {
-    const command = skillsCommand(repo, targets);
+  if (targets.some((t) => !t.skillsAgent)) {
+    log(`Claude Code: skills and hooks come from the plugin marketplace. In Claude Code run
+  /plugin marketplace add ${MARKETPLACE}
+then pick the plugins you want in /plugin.`);
+  }
+
+  const skillTargets = targets.filter((t) => t.skillsAgent);
+  if (skills && skillTargets.length) {
+    const command = skillsCommand(repo, skillTargets, skillNames);
     if (dryRun) {
       log(`[dry-run] would run: ${command}`);
     } else {
@@ -155,15 +254,23 @@ export function install({ names = [], home = os.homedir(), repo = REPO, dryRun =
   return results;
 }
 
+// `--only=a,b` -> ['a', 'b']
+const listFlag = (argv, flag) =>
+  argv.filter((a) => a.startsWith(`${flag}=`)).flatMap((a) => a.slice(flag.length + 1).split(',')).map((s) => s.trim()).filter(Boolean);
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const argv = process.argv.slice(2);
   try {
-    const badFlags = argv.filter((a) => a.startsWith('--') && !['--dry-run', '--no-skills'].includes(a));
-    if (badFlags.length) throw new Error(`Unknown option(s): ${badFlags.join(', ')}`);
+    const badFlags = argv.filter(
+      (a) => a.startsWith('--') && !['--dry-run', '--no-skills'].includes(a) && !/^--(only|skip)=/.test(a),
+    );
+    if (badFlags.length) throw new Error(`Unknown option(s): ${badFlags.join(', ')}. Lists take an =, e.g. --skip=pull-request`);
     install({
       names: argv.filter((a) => !a.startsWith('--')),
       dryRun: argv.includes('--dry-run'),
       skills: !argv.includes('--no-skills'),
+      only: listFlag(argv, '--only'),
+      skip: listFlag(argv, '--skip'),
     });
   } catch (err) {
     console.error(err.message);

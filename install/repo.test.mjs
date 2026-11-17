@@ -4,23 +4,10 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { REPO } from './install.mjs';
+import { REPO, frontMatter, repoSkills } from './install.mjs';
 
 const read = (rel) => fs.readFileSync(path.join(REPO, rel), 'utf8').replace(/\r\n/g, '\n');
-const skillNames = () =>
-  fs.readdirSync(path.join(REPO, 'skills'), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
-
-// Minimal front matter parser: top-level `key: value` lines between the first two `---`.
-export function frontMatter(text) {
-  const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
-  if (!m) return null;
-  const out = {};
-  for (const line of m[1].split('\n')) {
-    const kv = /^([A-Za-z][\w-]*):\s*(.*)$/.exec(line);
-    if (kv) out[kv[1]] = kv[2].replace(/^["']|["']$/g, '').trim();
-  }
-  return out;
-}
+const skillNames = () => repoSkills(REPO);
 
 // Files a skill says live in its own folder: `scripts/...` style paths, and
 // backticked names in a sentence that says "this skill folder".
@@ -125,12 +112,34 @@ test('hook scripts parse and every configured hook points at one', () => {
     const r = spawnSync(process.execPath, ['--check', path.join(dir, script)], { encoding: 'utf8' });
     assert.equal(r.status, 0, `${script} does not parse:\n${r.stderr}`);
   }
-  const settings = JSON.parse(read('hooks/claude/settings.hooks.json'));
-  const commands = Object.values(settings.hooks ?? {}).flatMap((groups) => groups.flatMap((g) => g.hooks.map((h) => h.command)));
+  // The dev-hooks plugin's hooks.json; the installer's settings fragment no longer carries hooks.
+  const plugin = JSON.parse(read('hooks/claude/hooks.json'));
+  const commands = Object.values(plugin.hooks ?? {}).flatMap((groups) => groups.flatMap((g) => g.hooks.map((h) => h.command)));
   assert.ok(commands.length > 0);
   for (const command of commands) {
-    const m = /\{\{HOOKS_DIR\}\}\/([\w.-]+)/.exec(command);
+    const m = /\$\{CLAUDE_PLUGIN_ROOT\}\/hooks\/claude\/([\w.-]+)/.exec(command);
     assert.ok(m, `hook command does not run a script from hooks/claude: ${command}`);
     assert.ok(scripts.includes(m[1]), `hook command points at missing ${m[1]}`);
   }
+  assert.equal(JSON.parse(read('hooks/claude/settings.hooks.json')).hooks, undefined);
+});
+
+test('the marketplace lists every skill once and every entry points at a real folder', () => {
+  const market = JSON.parse(read('.claude-plugin/marketplace.json'));
+  assert.ok(market.name && market.owner?.name);
+  const names = market.plugins.map((p) => p.name);
+  assert.equal(new Set(names).size, names.length, 'plugin names are unique');
+  const listed = [];
+  for (const p of market.plugins) {
+    assert.ok(p.description, `${p.name}: description missing`);
+    assert.equal(p.source, './', `${p.name}: source must be ./ (the repo root)`);
+    for (const rel of p.skills ?? []) {
+      assert.ok(fs.existsSync(path.join(REPO, rel, 'SKILL.md')), `${p.name}: ${rel} has no SKILL.md`);
+      listed.push(path.basename(rel));
+    }
+    if (p.hooks) assert.ok(fs.existsSync(path.join(REPO, p.hooks)), `${p.name}: ${p.hooks} missing`);
+    assert.ok(p.skills?.length || p.hooks, `${p.name}: lists no skills or hooks`);
+  }
+  assert.deepEqual(listed.sort(), skillNames().sort(), 'every skill folder has exactly one marketplace entry');
+  assert.ok(market.plugins.some((p) => p.hooks === './hooks/claude/hooks.json'), 'hooks plugin listed');
 });
