@@ -13,17 +13,24 @@ session links anywhere.
 
 Open `<work folder>/index.html` in the Playwright MCP (a `file://` URL; if it
 refuses file URLs, serve the folder with a static server that is already
-available and stop it afterwards). Viewport 1440×900. For each suggestion
-`<id>`, save element screenshots to `<work folder>/issue-images/`:
+available and stop it afterwards). Viewport 1440×900, device scale factor 2
+if the MCP allows it, so detail survives the downscaled layout. The page
+lazy-loads images: set every `img` to `loading="eager"` and wait until all
+report `complete` before capturing.
 
-- `#s-<id> .shot` for each screenshot (`<id>-shot-<n>.png`), so the red
-  highlight frames are included
+For each suggestion `<id>`, save to `<work folder>/issue-images/`:
+
+- each screenshot (`<id>-shot-<n>.png`): the original file from
+  `screenshots/` when it has no highlights, otherwise the `#s-<id> .shot`
+  element (the n-th one) so the red frames are included
 - `#s-<id> .wf[data-wf="before"]` and `#s-<id> .wf[data-wf="after"]`
   (`<id>-before.png`, `<id>-after.png`), for each side that has elements
 
-Take them with element refs from a snapshot, or with `browser_run_code`
-calling `page.locator(selector).screenshot({ path })`. Check that each file
-exists and isn't blank.
+Take them with the Playwright MCP's run-code tool (`browser_run_code` or
+`browser_run_code_unsafe`, whichever it has) calling
+`page.locator(selector).nth(n).screenshot({ path })`, or with element refs
+from a snapshot. The MCP may save to its own output folder; move those files
+into `issue-images/`. Check that each file exists and isn't blank.
 
 ## 2. Create the epic
 
@@ -48,15 +55,22 @@ exists and isn't blank.
    (filled in once the sub-issues exist)
    ```
 
-3. Set the issue type to Epic where the repo has issue types:
+3. Set the issue type to Epic if the owner has one. Only organisations have
+   issue types, and `Epic` isn't a default one, so check first:
+   `gh api orgs/<owner>/issue-types --jq '.[].name'`. If `Epic` is listed, run
    `gh api -X PATCH repos/<owner>/<repo>/issues/<epic#> -f type=Epic`.
-   If that fails (personal repos have no issue types), the `epic` label is
-   enough; mention it in the report.
+   Otherwise the `epic` label is enough; mention it in the report.
 
 ## 3. Upload the images
 
-Run the `pr-screenshots` skill's upload script with `--issue <epic#>` and all
-files in `issue-images/`. It prints a JSON map of file to
+Load the `pr-screenshots` skill to find its folder, then run its upload
+script from the project:
+
+```bash
+node <pr-screenshots skill folder>/scripts/upload-pr-screenshots.js --repo <owner>/<repo> --issue <epic#> <work folder>/issue-images/*.png
+```
+
+It prints a JSON map of file to
 `https://github.com/user-attachments/assets/...` URL. The first time, the user
 signs in to GitHub in the browser it opens; tell them it's waiting.
 
@@ -81,7 +95,11 @@ skill's structure. Title: the suggestion title. Labels: `<label>`. Body:
 Area: <area> · Category: <category> · Severity: <severity> · Effort: <effort>
 
 ### Current
-![<caption>](<shot url>)
+![<caption 1>](<shot 1 url>)
+<caption 1>
+
+![<caption 2>](<shot 2 url>)
+<caption 2>
 
 ### Wireframes
 | Before | After |
@@ -94,7 +112,10 @@ Area: <area> · Category: <category> · Severity: <severity> · Effort: <effort>
 Part of #<epic#>.
 ```
 
-Leave out the image sections that have no images. Link each one to the epic:
+One image and caption per screenshot, in order. If only one wireframe side
+exists, drop the table and show that image under `**Before**` or `**After**`.
+Leave out the image sections that have no images. A parent takes at most 100
+sub-issues; a review never needs that many. Link each one to the epic:
 
 ```bash
 P=$(gh issue view <epic#> --json id -q .id)

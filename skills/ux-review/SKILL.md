@@ -58,7 +58,7 @@ For each suggestion, draw a **before** and **after** wireframe in the Excalidraw
 - Use `fontSize` ≥ 16, no emoji. `cameraUpdate` / `delete` pseudo-elements are ignored by the page (the view fits the content).
 
 ## 5. Build the page
-With `--issues` the page is still built in the temp work folder, only to render the wireframes for the issues; it is never opened or kept.
+With `--issues` the page is still built in the temp work folder, only to render the screenshots and wireframes for the issues; it is never opened or kept.
 
 1. Create the work folder.
 2. Copy `template.html` from this skill folder to `<work folder>/index.html`. Don't edit it.
