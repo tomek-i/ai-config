@@ -57,9 +57,14 @@ Or install single plugins directly (Claude Code 2.1.275+):
 /plugin install dev-hooks --marketplace tomek-i/ai-config
 ```
 
-`dev-hooks` holds both hooks. Switch plugins on and off in `/plugin`; get
-updates with `/plugin marketplace update ai-config`. Plugin skills show up
-with a prefix, e.g. `ux-review:ux-review`.
+Plugins install as `<plugin>@tomek-i` (e.g. `ux-review@tomek-i`). `dev-hooks`
+holds both hooks. Switch plugins on and off in `/plugin`.
+
+To keep them all current, turn on auto-update for the marketplace (`/plugin` >
+Marketplaces > tomek-i > Enable auto-update): Claude Code then updates every
+installed plugin at startup. `/plugin marketplace update tomek-i` only
+refreshes the catalog; `claude plugin update <plugin>@tomek-i` updates one
+plugin. Plugin skills show up with a prefix, e.g. `ux-review:ux-review`.
 
 ### Installer: instructions, and skills for the other tools
 
