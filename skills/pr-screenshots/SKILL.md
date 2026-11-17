@@ -1,6 +1,6 @@
 ---
 name: pr-screenshots
-description: Attach screenshots to a GitHub PR body - uploads local images as GitHub-hosted attachments (never committed) and adds them to the PR description as a before/after table. Use when asked to add, attach or upload screenshots to a PR.
+description: Attach screenshots to a GitHub PR body - uploads local images as GitHub-hosted attachments (never committed) and adds them to the PR description as a before/after table. Use when asked to add, attach or upload screenshots to a PR. Its upload script also takes `--issue N` to get image URLs for a GitHub issue.
 argument-hint: "[PR number] <image paths...>"
 ---
 
@@ -15,6 +15,8 @@ Images go on GitHub, never in the repo.
    node <this skill folder>/scripts/upload-pr-screenshots.js [--pr N] <image>...
    ```
    It opens a visible browser with its own profile. The first time, the user signs in to GitHub there; it stays signed in. Tell the user when it's waiting for sign-in. It prints a JSON map of file path to `https://github.com/user-attachments/assets/...` URL on stdout. It never posts a comment.
+
+   For an issue instead of a PR, pass `--issue N`: it uploads through that issue's comment box. Other skills (such as the review skills) use this to put images in issue bodies; they write the bodies themselves, so steps 3 and 4 don't apply.
 
 3. **Update the body.** Read the current body with `gh pr view N --json body -q .body`, write the new body to a temp file and run `gh pr edit N --body-file <file>`. Replace an existing `## Screenshots` section, or add one before the `Closes #...` line:
    ```markdown

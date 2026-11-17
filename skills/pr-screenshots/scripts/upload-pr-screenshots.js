@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Uploads images to GitHub as PR attachments (github.com/user-attachments/...), the way dragging them
-// into a comment box does, and prints a JSON map of file -> URL. The comment is never posted: the box
-// is emptied after each upload. GitHub has no API for this, so it drives a visible browser.
+// Uploads images to GitHub as attachments (github.com/user-attachments/...), the way dragging them
+// into a PR or issue comment box does, and prints a JSON map of file -> URL. The comment is never
+// posted: the box is emptied after each upload. GitHub has no API for this, so it drives a visible browser.
 //
-//   node <pr-screenshots skill>/scripts/upload-pr-screenshots.js [--repo owner/name] [--pr N] <image>...
+//   node <pr-screenshots skill>/scripts/upload-pr-screenshots.js [--repo owner/name] [--pr N | --issue N] <image>...
 //
-// --repo and --pr default to the current directory's repo and branch PR (via gh).
+// --repo defaults to the current directory's repo; without --issue, --pr defaults to the branch PR (via gh).
 // The browser keeps its own profile: the first time, sign in to GitHub in the window; it stays signed in.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -21,8 +21,10 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--repo') opts.repo = argv[++i];
     else if (argv[i] === '--pr') opts.pr = argv[++i];
+    else if (argv[i] === '--issue') opts.issue = argv[++i];
     else opts.files.push(path.resolve(argv[i]));
   }
+  if (opts.pr && opts.issue) throw new Error('Give --pr or --issue, not both');
   return opts;
 }
 
@@ -57,12 +59,12 @@ async function launch(chromium) {
 }
 
 async function main() {
-  const { repo: repoArg, pr: prArg, files } = parseArgs(process.argv.slice(2));
+  const { repo: repoArg, pr: prArg, issue, files } = parseArgs(process.argv.slice(2));
   if (!files.length) throw new Error('No images given');
   const missing = files.filter((f) => !fs.existsSync(f));
   if (missing.length) throw new Error(`Not found: ${missing.join(', ')}`);
   const repo = repoArg || gh(['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner']);
-  const pr = prArg || gh(['pr', 'view', '--json', 'number', '-q', '.number']);
+  const target = issue ? `issues/${issue}` : `pull/${prArg || gh(['pr', 'view', '--json', 'number', '-q', '.number'])}`;
 
   const ctx = await launch(loadPlaywright());
   try {
@@ -79,14 +81,16 @@ async function main() {
     if (!who) throw new Error('Not signed in to GitHub after 15 minutes');
     log(`Signed in as ${who}`);
 
-    await page.goto(`https://github.com/${repo}/pull/${pr}`);
-    const box = page.locator('textarea[name="comment[body]"]').last();
+    await page.goto(`https://github.com/${repo}/${target}`);
+    // PR pages use a classic form; issue pages a React editor whose textarea has no name.
+    const box = page.locator('textarea[name="comment[body]"], textarea[placeholder*="Markdown"]').last();
     await box.waitFor({ timeout: 30_000 });
     await box.scrollIntoViewIfNeeded();
     // A fresh page's box takes no file until its editor has initialised.
     await box.click();
     await page.waitForTimeout(3000);
-    const input = page.locator('form:has(textarea[name="comment[body]"]) input[type="file"]').last();
+    // The file input nearest the box, whichever editor it belongs to.
+    const input = box.locator('xpath=ancestor::*[.//input[@type="file"]][1]').locator('input[type="file"]').first();
 
     const links = {};
     const seen = new Set();
@@ -112,7 +116,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  log(error.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    log(error.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { parseArgs };
