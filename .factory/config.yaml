@@ -8,10 +8,10 @@ project:
 
 # Quality gate: every command must exit 0 before reviews start.
 # The gate always uses the copy of this file on the default branch, so a branch cannot weaken its own checks.
-# No checks detected. Add the commands that must pass before review, e.g.
-#   - name: test
-#     run: "npm test"
-checks: []
+# Installer tests plus the repo content guards (skills, hooks, no leaks).
+checks:
+  - name: test
+    run: 'node --test "install/*.test.mjs"'
 
 # How to start the app for screenshots and walkthrough videos of UI changes. {port} is replaced per run.
 # start also runs in a fresh checkout of the default branch (for the before shots), so include the
