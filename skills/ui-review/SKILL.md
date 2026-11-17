@@ -25,7 +25,9 @@ Output: a local review page at `./docs/ui-review/<YYYY-MM-DD>/index.html`
 ## 2. Capture
 
 - Use the Playwright MCP, headless preferred. Desktop (1440×900), mobile
-  (390×844) if responsive, light and dark theme if supported.
+  (390×844) if responsive, light and dark theme if supported. Check 320px wide
+  for overflow and overlap.
+- Capture with reduced motion on as well when the app animates.
 - Capture component states: default, hover, focus, active, disabled, loading,
   empty, error.
 - Save screenshots to `./docs/ui-review/<date>/screenshots/` with readable
@@ -35,13 +37,23 @@ Output: a local review page at `./docs/ui-review/<YYYY-MM-DD>/index.html`
 
 If the `impeccable` skill is available, use its audit / polish guidance. Check:
 
-- typography: scale, weights, line height, line length, hierarchy
+- typography: one heading scale used everywhere, weights, line height, line
+  length, hierarchy; every font it uses actually loads
 - colour: palette use, contrast (WCAG AA), semantic colours, dark mode
-- spacing and layout: spacing scale, alignment, grid, density, whitespace
-- components: the same thing looks the same everywhere (buttons, inputs,
-  cards, icons, radii, shadows); deviations from the design tokens
+- spacing and layout: spacing scale, grid, density, whitespace; content shares
+  the same left and right edges instead of drifting to one side
+- one system: a single primary / secondary button pair, one card style, one
+  radius scale, one link style, the same input look in every form; boxes
+  nested at most two deep (no card in a card in a card); deviations from the
+  design tokens
 - states: hover / focus / disabled / loading / error styling present and
-  consistent
+  consistent; every button, link and clickable card visibly reacts to hover
+  and press; the focus ring is visible and never hidden under a sticky header
+- motion: nothing fades in section by section on scroll, no parallax on text,
+  no scroll hijacking; anything moving longer than 5 s can be paused; with
+  reduced motion everything rests and no content stays hidden
+- small screens: no sideways scroll at 320px, nothing overlapping or tucked
+  under a fixed bar, tap targets at least 44px tall with room between them
 - polish: overflow, truncation, broken images, jank, odd breakpoints
 
 ### AI slop banlist
@@ -65,6 +77,24 @@ or the project's design source of truth explicitly asks for it:
 
 This applies to the review's own text too. The same list is in the global
 instructions (`UI Design`); keep both in sync.
+
+### Copy that reads as generated
+
+Also `AI slop`. One hit proves little; several together do. Propose the plain
+fact the phrase stands in for:
+
+- filler words: seamless, effortless, unlock, unleash, elevate, empower,
+  powerful, robust, cutting-edge, next-level, world-class, game-changing
+- stock lines: "Ready to transform your…?", "Say goodbye to…", "X made
+  simple", "Join thousands of…", "at your fingertips"
+- a strip of three or four big numbers over one-word labels
+- two-fragment headings ("Fast setup. Zero hassle.") used more than once
+- reveal tricks: "The result? …", "One thing changed: …"
+- leftovers: "[Company Name]", lorem ipsum, `{{tokens}}`, stray markdown
+- invented-looking specifics (precise stats, quotes, customers) with no source
+- buttons that aren't a verb and an object ("Submit", "Learn more" over
+  "Book a demo", "Export report")
+- emoji as bullets, an arrow after every link
 
 Each finding must be **specific and grounded in a screenshot**: one problem,
 one concrete fix (name the token, value or component). Aim for 5–20, ordered by
