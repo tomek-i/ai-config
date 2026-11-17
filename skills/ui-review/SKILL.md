@@ -1,6 +1,7 @@
 ---
 name: ui-review
-description: Review the visual design of a running web app with the Playwright MCP - typography, colour, spacing, alignment, component consistency, states and polish - and produce a local HTML review page of concrete UI fixes, each with the screenshot, the problem, the proposed change and Approve / Decline / Approve with changes buttons. Use when the user asks for a "UI review", "visual review", "design polish pass", "check the UI consistency", or invokes /ui-review. For flows, navigation and usability use the `ux-review` skill instead.
+description: Review the visual design of a running web app with the Playwright MCP - typography, colour, spacing, alignment, component consistency, states and polish - and produce a local HTML review page of concrete UI fixes, each with the screenshot, the problem, the proposed change and Approve / Decline / Approve with changes buttons. Use when the user asks for a "UI review", "visual review", "design polish pass", "check the UI consistency", or invokes /ui-review. For flows, navigation and usability use the `ux-review` skill instead. Options: `--no-open` builds the page without opening it; `--issues` publishes the review as a GitHub epic with one sub-issue per finding instead of a page.
+argument-hint: "[url] [--no-open] [--issues]"
 ---
 
 # UI review
@@ -9,10 +10,28 @@ Focus: how the interface **looks** and whether it is **consistent**, not how
 users move through it (that is `ux-review`).
 
 Output: a local review page at `./docs/ui-review/<YYYY-MM-DD>/index.html`
-(gitignored, never committed).
+(gitignored, never committed), or GitHub issues with `--issues`.
+
+## Options
+
+Read them from the arguments, or from plain words in the request:
+
+- `--no-open` ("don't open it"): build the page as usual but don't open it;
+  just give the path.
+- `--issues` ("as GitHub issues", "create an epic"): no page. Publish an epic
+  issue with one sub-issue per finding, each with its screenshot and
+  wireframes. The user decides on GitHub: an open sub-issue is approved, a
+  closed one is declined.
+
+The **work folder** is `./docs/ui-review/<date>/` by default, and
+`<os temp>/ui-review-<date>/` with `--issues` so the review leaves nothing in
+the project.
 
 ## 1. Scope
 
+- With `--issues`, first check that `gh auth status` passes and the project
+  has a GitHub remote (`gh repo view`). If not, stop and say so before
+  capturing anything.
 - Find the app URL: an argument, a running dev server, or start one from the
   project's scripts.
 - If the user named pages, components or a focus (e.g. "forms", "dark mode"),
@@ -30,7 +49,7 @@ Output: a local review page at `./docs/ui-review/<YYYY-MM-DD>/index.html`
 - Capture with reduced motion on as well when the app animates.
 - Capture component states: default, hover, focus, active, disabled, loading,
   empty, error.
-- Save screenshots to `./docs/ui-review/<date>/screenshots/` with readable
+- Save screenshots to `<work folder>/screenshots/` with readable
   names (`01-dashboard-header.png`). Crop to the element a finding is about.
 
 ## 3. Find issues
@@ -125,10 +144,14 @@ impact. Note effort (S/M/L) honestly.
 
 ## 4. Build the page
 
-1. Create `./docs/ui-review/<date>/`.
+With `--issues` the page is still built in the temp work folder, only to
+render the screenshots and wireframes for the issues; it is never opened or
+kept.
+
+1. Create the work folder.
 2. Copy `template.html` from this skill folder to
-   `./docs/ui-review/<date>/index.html`. Don't edit it.
-3. Write `./docs/ui-review/<date>/data.js`:
+   `<work folder>/index.html`. Don't edit it.
+3. Write `<work folder>/data.js`:
 
 ```js
 window.REVIEW = {
@@ -159,11 +182,22 @@ window.REVIEW = {
 };
 ```
 
-4. Make sure the project `.gitignore` contains `docs/ui-review/`.
+4. Make sure the project `.gitignore` contains `docs/ui-review/`. Skip with
+   `--issues`.
 5. Open the page for the user (Windows: `start "" "docs/ui-review/<date>/index.html"`,
-   macOS: `open ...`) and tell them the path.
+   macOS: `open ...`) and tell them the path. With `--no-open`, only give the
+   path. With `--issues`, publish instead: follow `github-issues.md` in this skill folder, with kind `UI review` and label `ui-review`.
 
 ## 5. Act on the decisions
+
+### With `--issues`
+
+When the user comes back to the epic, read its sub-issues as
+`github-issues.md` describes: open ones are approved (their comments are
+"approve with changes" notes), closed ones are declined. Then implement the
+approved ones as below.
+
+### With the page
 
 The user marks each finding **Approve / Decline / Approve with changes** and
 pastes the decisions back. Then ask whether to:
