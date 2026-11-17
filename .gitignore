@@ -1,0 +1,5 @@
+# software factory runtime state
+.factory/runs/
+.factory/factory.db*
+.worktrees/
+.factory/drafts/
