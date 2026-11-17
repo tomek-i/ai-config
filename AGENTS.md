@@ -25,7 +25,11 @@ node --test "install/*.test.mjs"   # tests
 node install/install.mjs --dry-run # check the install without writing
 ```
 
-Run the tests after any change to `install/` or `hooks/claude/settings.hooks.json`.
+Run the tests after any change. Besides the installer, `install/repo.test.mjs`
+checks the content: skill front matter and file references, hook scripts, and
+that no tracked file contains a machine path, an email address or a secret.
+The software factory runs the same command as its quality gate
+(`.factory/config.yaml`).
 The installer only adds missing hook entries; changing an existing one in
 `settings.hooks.json` does not update installed settings.
 

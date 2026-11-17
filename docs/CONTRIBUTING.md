@@ -27,6 +27,10 @@ small and focused.
 
 ## Before Committing
 
+The tests also check every skill (front matter `name` matches the folder,
+referenced files exist in it) and scan tracked files for machine paths, emails
+and secrets. Use placeholders like `C:Users<you>` and `name@example.com`.
+
 ```bash
 node --test "install/*.test.mjs"
 node install/install.mjs --dry-run

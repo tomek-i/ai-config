@@ -13,7 +13,7 @@
 | `skills/` | My own skills in the [Agent Skills](https://agentskills.io) `SKILL.md` format |
 | `hooks/claude/` | Claude Code hooks and the settings they need |
 | `external.md` | Third-party skills and plugins I use, with install commands |
-| `install/` | The installer and its tests |
+| `install/` | The installer, its tests and the repo content checks |
 
 ### Skills
 
