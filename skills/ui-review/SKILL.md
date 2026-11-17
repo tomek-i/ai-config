@@ -38,14 +38,16 @@ Output: a local review page at `./docs/ui-review/<YYYY-MM-DD>/index.html`
 ### Impeccable (optional)
 
 If the `impeccable` skill is available, run it before your own checks and fold
-its results into this review. This page stays the only output.
+its results into this review. This page stays the only output, and the review
+leaves no files in the project besides it.
 
-- Its detector (`impeccable detect`, bundled with the skill) on the scope
-  (the app URL or the UI source folder): a deterministic anti-pattern scan.
-  Confirm each hit in a screenshot and drop false positives.
-- `/impeccable audit` on the same scope: a report-only check of
-  accessibility, performance, theming, responsive layout and anti-patterns.
-  Turn each real issue into a finding below.
+- `/impeccable audit` on the scope (the app URL or the UI source folder): a
+  check of accessibility, performance, theming, responsive layout and
+  anti-patterns, including its bundled detector scan (don't run the detector
+  separately). Confirm each hit in a screenshot, drop false positives and turn
+  each real issue into a finding below. Override its output steps: don't post
+  its report or Recommended Actions in chat, and skip its "Save the Report"
+  step so no `.impeccable/` files are left behind.
 - Use its `polish` reference as a checklist only. `polish` edits code, so
   don't run it during a review.
 - If `PRODUCT.md` or `DESIGN.md` is missing, don't run `init` or `document`;

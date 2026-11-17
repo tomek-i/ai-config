@@ -19,13 +19,13 @@ Output: a local, self-contained review page at `./docs/ux-review/<YYYY-MM-DD>/in
 - Crop to the area a suggestion is about when the full page would hide it.
 
 ## 3. Find improvements
-
 ### Impeccable (optional)
-If the `impeccable` skill is available, run it before your own pass and fold its results into this review. This page stays the only output.
-- Its detector (`impeccable detect`, bundled with the skill) on the scope (the app URL or the UI source folder): a deterministic anti-pattern scan. Confirm each hit in a screenshot and drop false positives.
-- `/impeccable critique` on the main pages or flows: heuristic scoring from two independent assessments. Use its findings, but skip its closing "what next?" question; the decisions happen on this page.
+If the `impeccable` skill is available, run it before your own pass and fold its results into this review. This page stays the only output, and the review leaves no files in the project besides it.
+- `/impeccable critique` on the main pages or flows: heuristic scoring from two independent assessments, with its bundled detector scan (don't run the detector separately). Confirm each hit in a screenshot and drop false positives. Override its output steps:
+  - Don't post its report in chat, show its Recommended Actions, or ask its questions; end it with `Questions skipped: decisions happen on the review page`.
+  - Skip its "Persist the Snapshot" step and leave no `.impeccable/` files behind.
   - It wants two sub-agents. Without a sub-agent tool it runs inline and marks itself degraded; say so in the summary.
-  - If it injects its browser overlay, stop the live server with `live-server stop --keep-inject` so it doesn't edit the project's HTML. The review makes no code changes.
+  - If it injects its browser overlay, stop the live server with `live-server stop --keep-inject` so it doesn't edit the project's HTML.
 - Use its `harden` reference (extreme input, API and network errors, long translations, many items, no data) and `clarify` reference (labels, error messages, consistent terms) as checklists only. Both commands edit code, so don't run them during a review.
 - If `PRODUCT.md` or `DESIGN.md` is missing, don't run `init`; say so in the summary.
 
