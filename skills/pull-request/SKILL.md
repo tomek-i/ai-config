@@ -62,9 +62,9 @@ If unsure whether a change is significant, record the video.
 For a change to an existing feature, the video covers only what's new or changed. Start where the change begins, show it working, and stop. Don't tour the whole app.
 
 - Record it with the `/narrate` plugin (`narrate:narrate-video`), which drives the Playwright MCP.
-- The video is for the user to watch the shipped feature. It's saved under `./docs/`. **Don't attach it to the PR and don't commit it.**
+- The video is for the user to watch the shipped feature or change. It's saved under `./docs/`. **Don't attach it to the PR and don't commit it.**
 - Tell the user the path to the video when done.
-- If a video was needed but couldn't be recorded (browser tooling unavailable, the app can't run), say so in the PR's "How it was tested" section and tell the user. Never skip it silently.
+- If a video was needed but couldn't be recorded (browser tooling unavailable, the app can't run), say so in the PR's "How it was tested" section (or the template's testing section) and tell the user. Never skip it silently.
 
 ## 4. Keep local media out of git
 Before committing, make sure the project `.gitignore` has these lines (add any that are missing, in their own commit: `chore: ignore local media`):

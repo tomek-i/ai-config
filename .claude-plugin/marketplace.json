@@ -20,7 +20,7 @@
     },
     {
       "name": "pull-request",
-      "description": "PR descriptions in plain language with before/after screenshots and a walkthrough video for new features and significant UI changes",
+      "description": "PR descriptions in plain language with before/after screenshots and a walkthrough video for new features and significant changes to existing ones",
       "source": "./",
       "strict": false,
       "skills": [

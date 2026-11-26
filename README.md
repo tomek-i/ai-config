@@ -21,7 +21,7 @@
 | Skill | What it does |
 | --- | --- |
 | `github-issue` | Writes issues as Why / What / Acceptance criteria; splits big work into sub-issues |
-| `pull-request` | PR description, before/after screenshots, narrated video for new features and significant UI changes |
+| `pull-request` | PR description, before/after screenshots, narrated video for new features and significant changes to existing ones |
 | `pr-screenshots` | Uploads screenshots to a PR body as GitHub attachments (never committed); its script also uploads through an issue (`--issue N`) |
 | `pr-review-fix` | Works through every review comment on a PR |
 | `ux-review` | Walks a running web app and produces an HTML page of UX suggestions; `--no-open` skips opening it, `--issues` creates a GitHub epic with a sub-issue per suggestion instead (needs `pr-screenshots` for images) |
