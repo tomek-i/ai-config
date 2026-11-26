@@ -1,6 +1,6 @@
 ---
 name: pull-request
-description: Create or update a GitHub pull request the way the user wants it - a plain-language description of what changed and why, before/after screenshots for user-facing changes (cropped and annotated, uploaded through the browser, never committed), and a narrated walkthrough video for new user-facing features. Use whenever opening, drafting, or filling in a PR, or when the user says "create a PR", "open a PR", "raise a PR", or "PR description".
+description: Create or update a GitHub pull request the way the user wants it - a plain-language description of what changed and why, before/after screenshots for user-facing changes (cropped and annotated, uploaded through the browser, never committed), and a narrated walkthrough video for new user-facing features and significant changes to existing ones. Use whenever opening, drafting, or filling in a PR, or when the user says "create a PR", "open a PR", "raise a PR", or "PR description".
 ---
 
 # Pull request
@@ -47,11 +47,24 @@ Once the PR exists, use the `pr-screenshots` skill. It uploads the images throug
 If the upload can't be done, save the screenshots locally under `./docs/screenshots/` (gitignored) and tell the user so they can attach them manually.
 
 ## 3. Narrated walkthrough video
-**Only for new user-facing features.** Skip for bug fixes, refactors, and backend/API changes.
+Record a video for:
+- new user-facing features
+- significant changes to existing user-facing features: a new or changed flow, a new screen, a reworked screen or panel, or a change in how users do a task
+
+Skip it for:
+- small visual tweaks (copy, spacing, colours)
+- bug fixes that restore intended behaviour
+- refactors
+- backend or API-only changes
+
+If unsure whether a change is significant, record the video.
+
+For a change to an existing feature, the video covers only what's new or changed. Start where the change begins, show it working, and stop. Don't tour the whole app.
 
 - Record it with the `/narrate` plugin (`narrate:narrate-video`), which drives the Playwright MCP.
-- The video is for the user to watch the shipped feature. It's saved under `./docs/`. **Don't attach it to the PR and don't commit it.**
+- The video is for the user to watch the shipped feature or change. It's saved under `./docs/`. **Don't attach it to the PR and don't commit it.**
 - Tell the user the path to the video when done.
+- If a video was needed but couldn't be recorded (browser tooling unavailable, the app can't run), say so in the PR's "How it was tested" section (or the template's testing section) and tell the user. Never skip it silently.
 
 ## 4. Keep local media out of git
 Before committing, make sure the project `.gitignore` has these lines (add any that are missing, in their own commit: `chore: ignore local media`):
